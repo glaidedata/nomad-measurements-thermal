@@ -20,7 +20,11 @@ class ThermalParser(MatchingParser):
             return False
 
         # String check based on the structure of your Cu TEC VerAcc file
-        if decoded_buffer and '[Header]' in decoded_buffer and '[Data]' in decoded_buffer:
+        if (
+            decoded_buffer
+            and '[Header]' in decoded_buffer
+            and '[Data]' in decoded_buffer
+        ):
             return True
 
         return False

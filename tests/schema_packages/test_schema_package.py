@@ -1,12 +1,14 @@
-import pytest
+from unittest.mock import MagicMock, patch
+
 import numpy as np
-from unittest.mock import patch, MagicMock
+import pytest
 from nomad.datamodel import EntryArchive, EntryMetadata
+from readers_ientrance.thermal_reader import ThermalData
 
 from nomad_measurements_thermal.schema_packages.schema_package import (
     ThermalMeasurement,
 )
-from readers_ientrance.thermal_reader import ThermalData
+
 
 @pytest.fixture
 def mock_thermal_data():
@@ -18,7 +20,7 @@ def mock_thermal_data():
         'offset_mode': 'set',
         'dilation_offset': '0.01',
         'rotator_angle': '45.0',
-        'sample_slot': 'A1'
+        'sample_slot': 'A1',
     }
     return ThermalData(
         metadata=metadata,
@@ -26,8 +28,9 @@ def mock_thermal_data():
         system_temperature=np.array([300.0, 305.0]),
         field=np.array([100.0, 200.0]),  # In Oersted (Oe)
         dilation=np.array([0.5, 0.6]),
-        comment=["Start", "End"]
+        comment=['Start', 'End'],
     )
+
 
 @patch('nomad_measurements_thermal.schema_packages.schema_package.read_thermal_dat')
 def test_thermal_measurement_normalize(mock_read_thermal_dat, mock_thermal_data):
@@ -40,14 +43,14 @@ def test_thermal_measurement_normalize(mock_read_thermal_dat, mock_thermal_data)
     archive.m_context = MagicMock()
 
     # FIX: Use actual EntryMetadata to prevent the base class warning
-    archive.metadata = EntryMetadata(entry_name="dummy_entry_name")
+    archive.metadata = EntryMetadata(entry_name='dummy_entry_name')
 
     mock_file = MagicMock()
-    mock_file.name = "dummy_absolute_path.dat"
+    mock_file.name = 'dummy_absolute_path.dat'
     archive.m_context.raw_file.return_value.__enter__.return_value = mock_file
 
     # 3. Instantiate the schema and trigger normalization
-    entry = ThermalMeasurement(data_file="dummy_path.dat")
+    entry = ThermalMeasurement(data_file='dummy_path.dat')
     entry.normalize(archive, MagicMock())
 
     # --- VERIFICATIONS ---
@@ -58,11 +61,11 @@ def test_thermal_measurement_normalize(mock_read_thermal_dat, mock_thermal_data)
     # Verify Sample Section
     assert len(entry.sample) == 1
     smp = entry.sample[0]
-    assert smp.sample_length == 2.5
-    assert smp.cell_constant == 0.15
+    assert smp.sample_length == 2.5  # noqa: PLR2004
+    assert smp.cell_constant == 0.15  # noqa: PLR2004
     assert smp.offset_mode == 'set'
-    assert smp.dilation_offset == 0.01
-    assert smp.rotator_angle == 45.0
+    assert smp.dilation_offset == 0.01  # noqa: PLR2004
+    assert smp.rotator_angle == 45.0  # noqa: PLR2004
     assert smp.sample_slot == 'A1'
 
     # Verify Results Section
@@ -73,7 +76,10 @@ def test_thermal_measurement_normalize(mock_read_thermal_dat, mock_thermal_data)
     assert np.array_equal(res.time_stamp.magnitude, [1.0, 2.0])
     assert np.array_equal(res.system_temperature.magnitude, [300.0, 305.0])
     assert np.array_equal(res.dilation.magnitude, [0.5, 0.6])
-    assert res.comment == ["Start", "End"]  # Strings don't have units, so this stays the same
+    assert res.comment == [
+        'Start',
+        'End',
+    ]  # Strings don't have units, so this stays the same
 
     # Verify Unit Conversion (Oe to A/m)
     OE_TO_AM = 1000.0 / (4.0 * np.pi)

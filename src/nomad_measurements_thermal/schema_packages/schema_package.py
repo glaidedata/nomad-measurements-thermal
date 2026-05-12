@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+
 import numpy as np
 
 if TYPE_CHECKING:
@@ -29,9 +30,14 @@ OE_TO_AM = 1000.0 / (4.0 * np.pi)  # Oersted to A/m
 # ==========================================
 class ThermalSample(ArchiveSection):
     """Section for storing sample metadata extracted from the BEGIN:PARAMS block."""
-    sample_id = Quantity(type=str, description='Unique identifier or name for the sample.')
+
+    sample_id = Quantity(
+        type=str, description='Unique identifier or name for the sample.'
+    )
     sample_length = Quantity(type=np.float64, description='Length of the sample.')
-    cell_constant = Quantity(type=np.float64, description='Cell constant used during measurement.')
+    cell_constant = Quantity(
+        type=np.float64, description='Cell constant used during measurement.'
+    )
     offset_mode = Quantity(type=str, description='Offset mode setting.')
     dilation_offset = Quantity(type=np.float64, description='Dilation offset applied.')
     rotator_angle = Quantity(type=np.float64, description='Rotator angle setting.')
@@ -46,9 +52,7 @@ class ThermalResult(MeasurementResult):
 
     time_stamp = Quantity(type=np.float64, shape=['*'], unit='s')
     comment = Quantity(
-        type=str,
-        shape=['*'],
-        description='Inline comments for each data point.'
+        type=str, shape=['*'], description='Inline comments for each data point.'
     )
     system_temperature = Quantity(type=np.float64, shape=['*'], unit='K')
     sample_temperature = Quantity(type=np.float64, shape=['*'], unit='K')
@@ -86,6 +90,7 @@ class ThermalResult(MeasurementResult):
 # ==========================================
 class ThermalMeasurement(Measurement, EntryData):
     """Main EntryData schema triggered by the matching parser."""
+
     m_def = Section(
         a_eln=dict(lane_width='600px'),
     )
@@ -93,64 +98,55 @@ class ThermalMeasurement(Measurement, EntryData):
     data_file = Quantity(
         type=str,
         a_eln=ELNAnnotation(component=ELNComponentEnum.FileEditQuantity),
-        a_browser=dict(adaptor='RawFileAdaptor')
+        a_browser=dict(adaptor='RawFileAdaptor'),
     )
 
     title = Quantity(type=str, description='Title extracted from header.')
     datatype_time = Quantity(type=str, description='DATATYPE for TIME from header.')
-    datatype_comment = Quantity(type=str, description='DATATYPE for COMMENT from header.')
+    datatype_comment = Quantity(
+        type=str, description='DATATYPE for COMMENT from header.'
+    )
 
     sample = SubSection(section_def=ThermalSample, repeats=True)
     results = SubSection(section_def=ThermalResult, repeats=True)
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        """
-        Triggered by the Parser. Handles reading the file and mapping output directly to the schema.
-        """
-        super().normalize(archive, logger)
-
-        if not self.data_file:
-            return
-
-        logger.info('Parsing Thermal Measurement file', data_file=self.data_file)
-
-        try:
-            # Safely fetch the absolute path to the uploaded file
-            with archive.m_context.raw_file(self.data_file, 'r') as f:
-                file_path = f.name
-
-            # Execute your standalone reader
-            thermal_data = read_thermal_dat(file_path)
-
-        except Exception as e:
-            logger.error('Failed to parse thermal data file.', exc_info=e)
-            return
-
-        # 1. Map Top-Level Metadata
-        self.title = thermal_data.metadata.get('TITLE')
-
-        # 2. Map Sample Parameters
+    def _map_sample(self, metadata: dict) -> None:
+        """Helper method to map sample metadata."""
         if not self.sample:
             self.sample = [ThermalSample()]
 
         smp = self.sample[0]
-        smp.sample_length = float(thermal_data.metadata.get('sample_length')) if 'sample_length' in thermal_data.metadata else None
-        smp.cell_constant = float(thermal_data.metadata.get('cell_constant')) if 'cell_constant' in thermal_data.metadata else None
-        smp.offset_mode = thermal_data.metadata.get('offset_mode')
-        smp.dilation_offset = float(thermal_data.metadata.get('dilation_offset')) if 'dilation_offset' in thermal_data.metadata else None
-        smp.rotator_angle = float(thermal_data.metadata.get('rotator_angle')) if 'rotator_angle' in thermal_data.metadata else None
-        smp.sample_slot = thermal_data.metadata.get('sample_slot')
+        smp.sample_length = (
+            float(metadata.get('sample_length'))
+            if 'sample_length' in metadata
+            else None
+        )
+        smp.cell_constant = (
+            float(metadata.get('cell_constant'))
+            if 'cell_constant' in metadata
+            else None
+        )
+        smp.offset_mode = metadata.get('offset_mode')
+        smp.dilation_offset = (
+            float(metadata.get('dilation_offset'))
+            if 'dilation_offset' in metadata
+            else None
+        )
+        smp.rotator_angle = (
+            float(metadata.get('rotator_angle'))
+            if 'rotator_angle' in metadata
+            else None
+        )
+        smp.sample_slot = metadata.get('sample_slot')
 
-
-        # 3. Map Results Arrays
+    def _map_results(self, thermal_data) -> None:
+        """Helper method to map data arrays to the results section."""
         if not self.results:
             self.results = [ThermalResult()]
 
         res = self.results[0]
         res.time_stamp = (
-            thermal_data.time_stamp
-            if thermal_data.time_stamp is not None
-            else None
+            thermal_data.time_stamp if thermal_data.time_stamp is not None else None
         )
         res.system_temperature = (
             thermal_data.system_temperature
@@ -172,20 +168,19 @@ class ThermalMeasurement(Measurement, EntryData):
             if thermal_data.sample_temperature_range is not None
             else None
         )
+
+        # Apply SI Conversion to magnetic field fields
         res.field = (
-            thermal_data.field * OE_TO_AM
-            if thermal_data.field is not None
-            else None
+            thermal_data.field * OE_TO_AM if thermal_data.field is not None else None
         )
         res.field_rate = (
             thermal_data.field_rate * OE_TO_AM
             if thermal_data.field_rate is not None
             else None
         )
+
         res.chamber_pres = (
-            thermal_data.chamber_pres
-            if thermal_data.chamber_pres is not None
-            else None
+            thermal_data.chamber_pres if thermal_data.chamber_pres is not None else None
         )
         res.temperature_status = (
             thermal_data.temperature_status
@@ -193,9 +188,7 @@ class ThermalMeasurement(Measurement, EntryData):
             else None
         )
         res.field_status = (
-            thermal_data.field_status
-            if thermal_data.field_status is not None
-            else None
+            thermal_data.field_status if thermal_data.field_status is not None else None
         )
         res.chamber_status = (
             thermal_data.chamber_status
@@ -203,9 +196,7 @@ class ThermalMeasurement(Measurement, EntryData):
             else None
         )
         res.bridge_cycle = (
-            thermal_data.bridge_cycle
-            if thermal_data.bridge_cycle is not None
-            else None
+            thermal_data.bridge_cycle if thermal_data.bridge_cycle is not None else None
         )
         res.rotator_angle = (
             thermal_data.rotator_angle
@@ -253,9 +244,7 @@ class ThermalMeasurement(Measurement, EntryData):
             else None
         )
         res.dilation = (
-            thermal_data.dilation
-            if thermal_data.dilation is not None
-            else None
+            thermal_data.dilation if thermal_data.dilation is not None else None
         )
         res.dilation_rate = (
             thermal_data.dilation_rate
@@ -298,5 +287,38 @@ class ThermalMeasurement(Measurement, EntryData):
             else None
         )
         res.comment = thermal_data.comment
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+        Triggered by the Parser. Handles reading the file and mapping output directly to the schema.
+        """
+        super().normalize(archive, logger)
+
+        if not self.data_file:
+            return
+
+        logger.info('Parsing Thermal Measurement file', data_file=self.data_file)
+
+        try:
+            # Safely fetch the absolute path to the uploaded file
+            with archive.m_context.raw_file(self.data_file, 'r') as f:
+                file_path = f.name
+
+            # Execute your standalone reader
+            thermal_data = read_thermal_dat(file_path)
+
+        except Exception as e:
+            logger.error('Failed to parse thermal data file.', exc_info=e)
+            return
+
+        # 1. Map Top-Level Metadata
+        self.title = thermal_data.metadata.get('TITLE')
+
+        # 2. Map Sample Parameters
+        self._map_sample(thermal_data.metadata)
+
+        # 3. Map Results Arrays
+        self._map_results(thermal_data)
+
 
 m_package.__init_metainfo__()
