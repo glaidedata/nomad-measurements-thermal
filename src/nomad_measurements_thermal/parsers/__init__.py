@@ -11,6 +11,6 @@ class ThermalParserEntryPoint(ParserEntryPoint):
 parser_entry_point = ThermalParserEntryPoint(
     name='ThermalParser',
     description='Parser for Thermal Analysis files.',
-    mainfile_mime_re='text/.*',
+    mainfile_mime_re='text/.*|application/.*',
     mainfile_name_re='.*\\.(dat)$',
 )
