@@ -51,128 +51,185 @@ class ThermalResult(MeasurementResult):
     """Section for storing all the extracted arrays."""
 
     time_stamp = Quantity(
-        type=np.float64, shape=['*'], unit='s',
-        description='Time stamp array for each measurement point.'
+        type=np.float64,
+        shape=['*'],
+        unit='s',
+        description='Time stamp array for each measurement point.',
     )
     comment = Quantity(
-        type=str, shape=['*'],
-        description='Inline comments or parameters recorded for each data point.'
+        type=str,
+        shape=['*'],
+        description='Inline comments or parameters recorded for each data point.',
     )
     system_temperature = Quantity(
-        type=np.float64, shape=['*'], unit='K',
-        description='Temperature of the measurement system over time.'
+        type=np.float64,
+        shape=['*'],
+        unit='K',
+        description='Temperature of the measurement system over time.',
     )
     sample_temperature = Quantity(
-        type=np.float64, shape=['*'], unit='K',
-        description='Measured temperature of the sample over time.'
+        type=np.float64,
+        shape=['*'],
+        unit='K',
+        description='Measured temperature of the sample over time.',
     )
     sample_temperature_rate = Quantity(
-        type=np.float64, shape=['*'], unit='K/s',
-        description='Rate of change of the sample temperature.'
+        type=np.float64,
+        shape=['*'],
+        unit='K/s',
+        description='Rate of change of the sample temperature.',
     )
     sample_temperature_range = Quantity(
-        type=np.float64, shape=['*'], unit='K',
-        description='Temperature range setting for the sample.'
+        type=np.float64,
+        shape=['*'],
+        unit='K',
+        description='Temperature range setting for the sample.',
     )
     field = Quantity(
-        type=np.float64, shape=['*'], unit='A/m',
-        description='Applied magnetic field (converted from Oe to A/m).'
+        type=np.float64,
+        shape=['*'],
+        unit='A/m',
+        description='Applied magnetic field (converted from Oe to A/m).',
     )
     field_rate = Quantity(
-        type=np.float64, shape=['*'], unit='A/m/s',
-        description='Sweep rate of the applied magnetic field (converted from Oe/sec to A/m/s).'
+        type=np.float64,
+        shape=['*'],
+        unit='A/m/s',
+        description='Sweep rate of the applied magnetic field (converted from Oe/sec to A/m/s).',
     )
     chamber_pres = Quantity(
-        type=np.float64, shape=['*'], unit='torr',
-        description='Pressure inside the sample chamber.'
+        type=np.float64,
+        shape=['*'],
+        unit='torr',
+        description='Pressure inside the sample chamber.',
     )
     temperature_status = Quantity(
-        type=np.float64, shape=['*'],
-        description='Status code for the temperature controller.'
+        type=np.float64,
+        shape=['*'],
+        description='Status code for the temperature controller.',
     )
     field_status = Quantity(
-        type=np.float64, shape=['*'],
-        description='Status code for the magnetic field controller.'
+        type=np.float64,
+        shape=['*'],
+        description='Status code for the magnetic field controller.',
     )
     chamber_status = Quantity(
-        type=np.float64, shape=['*'],
-        description='Status code for the sample chamber environment.'
+        type=np.float64,
+        shape=['*'],
+        description='Status code for the sample chamber environment.',
     )
     bridge_cycle = Quantity(
-        type=np.float64, shape=['*'],
-        description='Measurement cycle count for the readout bridge.'
+        type=np.float64,
+        shape=['*'],
+        description='Measurement cycle count for the readout bridge.',
     )
     rotator_angle = Quantity(
-        type=np.float64, shape=['*'], unit='deg',
-        description='Angle of the sample rotator during the measurement.'
+        type=np.float64,
+        shape=['*'],
+        unit='deg',
+        description='Angle of the sample rotator during the measurement.',
     )
     therm_resistance = Quantity(
-        type=np.float64, shape=['*'], unit='ohm',
-        description='Measured thermal resistance.'
+        type=np.float64,
+        shape=['*'],
+        unit='ohm',
+        description='Measured thermal resistance.',
     )
     therm_resistance_rate = Quantity(
-        type=np.float64, shape=['*'], unit='ohm/s',
-        description='Rate of change of the thermal resistance.'
+        type=np.float64,
+        shape=['*'],
+        unit='ohm/s',
+        description='Rate of change of the thermal resistance.',
     )
     cell_imbalance = Quantity(
-        type=np.float64, shape=['*'], unit='ppm',
-        description='Imbalance measured across the measurement cell.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm',
+        description='Imbalance measured across the measurement cell.',
     )
     cell_imbalance_rate = Quantity(
-        type=np.float64, shape=['*'], unit='ppm/s',
-        description='Rate of change of the cell imbalance.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm/s',
+        description='Rate of change of the cell imbalance.',
     )
     tap_imbalance = Quantity(
-        type=np.float64, shape=['*'], unit='ppm',
-        description='Tap imbalance measurement.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm',
+        description='Tap imbalance measurement.',
     )
     coarse_dac_imbalance = Quantity(
-        type=np.float64, shape=['*'], unit='ppm',
-        description='Coarse Digital-to-Analog Converter (DAC) imbalance.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm',
+        description='Coarse Digital-to-Analog Converter (DAC) imbalance.',
     )
     fine_dac_imbalance = Quantity(
-        type=np.float64, shape=['*'], unit='ppm',
-        description='Fine Digital-to-Analog Converter (DAC) imbalance.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm',
+        description='Fine Digital-to-Analog Converter (DAC) imbalance.',
     )
     loop_imbalance = Quantity(
-        type=np.float64, shape=['*'], unit='ppm',
-        description='Imbalance measured within the feedback loop.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm',
+        description='Imbalance measured within the feedback loop.',
     )
     dilation = Quantity(
-        type=np.float64, shape=['*'], unit='ppm',
-        description='Measured dilation (thermal expansion) of the sample.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm',
+        description='Measured dilation (thermal expansion) of the sample.',
     )
     dilation_rate = Quantity(
-        type=np.float64, shape=['*'], unit='ppm/s',
-        description='Rate of change of the sample dilation.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm/s',
+        description='Rate of change of the sample dilation.',
     )
     therm_exp_coeff_raw = Quantity(
-        type=np.float64, shape=['*'], unit='ppm/K',
-        description='Raw, uncorrected thermal expansion coefficient.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm/K',
+        description='Raw, uncorrected thermal expansion coefficient.',
     )
     therm_exp_coeff = Quantity(
-        type=np.float64, shape=['*'], unit='ppm/K',
-        description='Final processed thermal expansion coefficient.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm/K',
+        description='Final processed thermal expansion coefficient.',
     )
     therm_exp_coeff_compare = Quantity(
-        type=np.float64, shape=['*'], unit='ppm/K',
-        description='Thermal expansion coefficient used for comparison.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm/K',
+        description='Thermal expansion coefficient used for comparison.',
     )
     therm_exp_coeff_diff_percentage = Quantity(
-        type=np.float64, shape=['*'], unit='%',
-        description='Percentage difference between sample and reference thermal expansion.'
+        type=np.float64,
+        shape=['*'],
+        unit='%',
+        description='Percentage difference between sample and reference thermal expansion.',
     )
     therm_exp_coeff_diff_absolute = Quantity(
-        type=np.float64, shape=['*'], unit='ppm/K',
-        description='Absolute difference between sample and reference thermal expansion.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm/K',
+        description='Absolute difference between sample and reference thermal expansion.',
     )
     therm_exp_coeff_baseline = Quantity(
-        type=np.float64, shape=['*'], unit='ppm/K',
-        description='Baseline thermal expansion coefficient of the system.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm/K',
+        description='Baseline thermal expansion coefficient of the system.',
     )
     therm_exp_coeff_reference = Quantity(
-        type=np.float64, shape=['*'], unit='ppm/K',
-        description='Reference thermal expansion coefficient for calibration.'
+        type=np.float64,
+        shape=['*'],
+        unit='ppm/K',
+        description='Reference thermal expansion coefficient for calibration.',
     )
 
 
@@ -190,7 +247,7 @@ class ThermalMeasurement(Measurement, EntryData):
         type=str,
         a_eln=ELNAnnotation(component=ELNComponentEnum.FileEditQuantity),
         a_browser=dict(adaptor='RawFileAdaptor'),
-        description='The uploaded raw data file (.dat/.txt) for this measurement.'
+        description='The uploaded raw data file (.dat/.txt) for this measurement.',
     )
 
     title = Quantity(
@@ -200,7 +257,8 @@ class ThermalMeasurement(Measurement, EntryData):
         type=str, description='DATATYPE identifier for TIME extracted from the header.'
     )
     datatype_comment = Quantity(
-        type=str, description='DATATYPE identifier for COMMENT extracted from the header.'
+        type=str,
+        description='DATATYPE identifier for COMMENT extracted from the header.',
     )
 
     sample = SubSection(section_def=ThermalSample, repeats=True)
