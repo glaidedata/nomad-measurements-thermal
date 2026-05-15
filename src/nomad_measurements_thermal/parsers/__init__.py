@@ -1,18 +1,16 @@
 from nomad.config.models.plugins import ParserEntryPoint
-from pydantic import Field
 
 
-class NewParserEntryPoint(ParserEntryPoint):
-    parameter: int = Field(0, description='Custom configuration parameter')
-
+class ThermalParserEntryPoint(ParserEntryPoint):
     def load(self):
-        from nomad_measurements_thermal.parsers.parser import NewParser
+        from nomad_measurements_thermal.parsers.parser import ThermalParser
 
-        return NewParser(**self.model_dump())
+        return ThermalParser(**self.dict())
 
 
-parser_entry_point = NewParserEntryPoint(
-    name='NewParser',
-    description='New parser entry point configuration.',
-    mainfile_name_re=r'.*\.newmainfilename',
+parser_entry_point = ThermalParserEntryPoint(
+    name='ThermalParser',
+    description='Parser for Thermal Analysis files.',
+    mainfile_mime_re='text/.*|application/.*',
+    mainfile_name_re='.*\\.(dat)$',
 )
