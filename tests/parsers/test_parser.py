@@ -9,8 +9,14 @@ def test_is_mainfile():
     """Test the parser's gatekeeper logic."""
     parser = ThermalParser()
 
-    # Valid file structure
-    valid_content = '[Header]\nTITLE,Test\n[Data]\nTimeStamp (sec)...'
+    # Valid thermal file structure
+    valid_content = (
+        '[Header]\n'
+        'BEGIN:PARAMS\n'
+        'cell_constant,1.0\n'
+        '[Data]\n'
+        'TimeStamp (sec)...'
+    )
     assert parser.is_mainfile(
         'test_file.dat', 'text/plain', valid_content.encode(), valid_content
     )
