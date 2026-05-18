@@ -15,16 +15,28 @@ class ThermalParser(MatchingParser):
         decoded_buffer: str,
         compression: str = None,
     ) -> bool:
-        """Gatekeeper for Dilatometry .dat files."""
+        """Gatekeeper for thermal-analysis .dat files."""
         if not super().is_mainfile(filename, mime, buffer, decoded_buffer, compression):
             return False
 
-        # String check based on the structure of your Cu TEC VerAcc file
-        if (
-            decoded_buffer
-            and '[Header]' in decoded_buffer
-            and '[Data]' in decoded_buffer
-        ):
+        if not decoded_buffer:
+            return False
+
+        # Keep the generic structural checks, but add thermal-specific markers to
+        # avoid grabbing other Quantum Design `.dat` formats.
+        has_sections = '[Header]' in decoded_buffer and '[Data]' in decoded_buffer
+        has_thermal_marker = any(
+            marker in decoded_buffer
+            for marker in (
+                'BEGIN:PARAMS',
+                'dilation_offset',
+                'cell_constant',
+                'Therm Resistance',
+                'Dilation (ppm)',
+            )
+        )
+
+        if has_sections and has_thermal_marker:
             return True
 
         return False
