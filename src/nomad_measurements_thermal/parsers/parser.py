@@ -31,8 +31,8 @@ class ThermalParser(MatchingParser):
                 'BEGIN:PARAMS',
                 'dilation_offset',
                 'cell_constant',
-                'therm_resistance',
-                'therm_exp_coeff',
+                'Therm Resistance',
+                'Dilation (ppm)',
             )
         )
 
