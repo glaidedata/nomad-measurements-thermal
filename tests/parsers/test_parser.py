@@ -11,11 +11,7 @@ def test_is_mainfile():
 
     # Valid thermal file structure
     valid_content = (
-        '[Header]\n'
-        'BEGIN:PARAMS\n'
-        'cell_constant,1.0\n'
-        '[Data]\n'
-        'TimeStamp (sec)...'
+        '[Header]\nBEGIN:PARAMS\ncell_constant,1.0\n[Data]\nTimeStamp (sec)...'
     )
     assert parser.is_mainfile(
         'test_file.dat', 'text/plain', valid_content.encode(), valid_content
