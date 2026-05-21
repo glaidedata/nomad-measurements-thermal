@@ -10,7 +10,7 @@ class ThermalParserEntryPoint(ParserEntryPoint):
 
 parser_entry_point = ThermalParserEntryPoint(
     name='ThermalParser',
-    description='Parser for Thermal Analysis files.',
+    description='Parser for Thermal Analysis files (Dilatometry & DSC).',
     mainfile_mime_re='text/.*|application/.*',
-    mainfile_name_re='.*\\.(dat)$',
+    mainfile_name_re='.*\\.(dat|txt)$',
 )
