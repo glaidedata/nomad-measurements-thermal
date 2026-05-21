@@ -1,6 +1,7 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
+import re
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -298,7 +299,7 @@ class DSCCalibrationInformation(ArchiveSection):
     date_time = Quantity(type=str, description='Calibration Date/Time.')
 
 class DSCInitialConditions(ArchiveSection):
-    temperature = Quantity(type=str, description='Initial temperature.')
+    temperature = Quantity(type=np.float64, unit='°C', description='Initial temperature.')
     purge_gas = Quantity(type=str, description='Purge gas used.')
     purge_gas_rate = Quantity(type=str, description='Purge gas rate.')
     baseline_filename = Quantity(type=str, description='Baseline filename.')
@@ -315,26 +316,35 @@ class DSCSmartScanCalibration(ArchiveSection):
     date = Quantity(type=str)
     smartscan_enabled = Quantity(type=str)
     calibration_file = Quantity(type=str)
-    starting_temperature = Quantity(type=str)
-    ending_temperature = Quantity(type=str)
-    number_of_steps = Quantity(type=str)
+    starting_temperature = Quantity(type=np.float64, unit='°C')
+    ending_temperature = Quantity(type=np.float64, unit='°C')
+    number_of_steps = Quantity(type=np.float64)
 
 class DSCSampleTemperatureCalibration(ArchiveSection):
     date = Quantity(type=str)
-    reference = Quantity(type=str, description='Headers for reference row.')
-    indium = Quantity(type=str, description='Indium calibration values.')
+    reference = Quantity(type=str, shape=['*'], description='Reference Material')
+    expected_temperature = Quantity(type=np.float64, shape=['*'], unit='°C')
+    measured_temperature = Quantity(type=np.float64, shape=['*'], unit='°C')
+    weight = Quantity(type=np.float64, shape=['*'], unit='mg')
+    scan_rate = Quantity(type=np.float64, shape=['*'], unit='°C/min')
 
 class DSCFurnaceTemperatureCalibration(ArchiveSection):
-    minimum = Quantity(type=str, description='Minimum furnace temperature.')
-    maximum = Quantity(type=str, description='Maximum furnace temperature.')
+    minimum = Quantity(type=np.float64, unit='°C', description='Minimum furnace temperature.')
+    maximum = Quantity(type=np.float64, unit='°C', description='Maximum furnace temperature.')
 
 class DSCFurnaceCalibrationComputed(ArchiveSection):
     date = Quantity(type=str)
-    setpoints = Quantity(type=str, description='Headers for the setpoints table.')
+    setpoints = Quantity(type=np.float64, shape=['*'], unit='°C')
+    boundaries = Quantity(type=np.float64, shape=['*'], unit='°C')
+    y_double_prime = Quantity(type=np.float64, shape=['*'])
 
 class DSCHeatFlowCalibrationValues(ArchiveSection):
-    reference = Quantity(type=str, description='Headers for reference row.')
-    indium = Quantity(type=str, description='Indium heat flow values.')
+    reference = Quantity(type=str, shape=['*'])
+    temperature = Quantity(type=np.float64, shape=['*'], unit='°C')
+    expected = Quantity(type=np.float64, shape=['*'], unit='J/g')
+    measured = Quantity(type=np.float64, shape=['*'], unit='J/g')
+    weight = Quantity(type=np.float64, shape=['*'], unit='mg')
+    scan_rate = Quantity(type=np.float64, shape=['*'], unit='°C/min')
 
 class DSCHeatFlowCalibrationComputed(ArchiveSection):
     date = Quantity(type=str)
@@ -344,9 +354,9 @@ class DSCProfileValues(ArchiveSection):
     software_version = Quantity(type=str)
     firmware_version = Quantity(type=str)
     instrument_serial_number = Quantity(type=str)
-    load_temperature = Quantity(type=str)
-    go_to_temp_rate = Quantity(type=str)
-    maximum_allowed_temperature = Quantity(type=str)
+    load_temperature = Quantity(type=np.float64, unit='°C')
+    go_to_temp_rate = Quantity(type=np.float64, unit='°C/min')
+    maximum_allowed_temperature = Quantity(type=np.float64, unit='°C')
     helium_purge = Quantity(type=str)
     liquid_nitrogen = Quantity(type=str)
     data_taken_using_the = Quantity(type=str)
@@ -356,20 +366,30 @@ class DSCProfileValues(ArchiveSection):
     autoslope_used = Quantity(type=str)
 
 class DSCResult(MeasurementResult):
-    """Section for storing extracted DSC data arrays."""
-    time = Quantity(type=np.float64, shape=['*'])
-    unsubtracted_heat_flow = Quantity(type=np.float64, shape=['*'])
-    baseline_heat_flow = Quantity(type=np.float64, shape=['*'])
+    """Section for storing extracted DSC data arrays with proper Units."""
+    time = Quantity(type=np.float64, shape=['*'], unit='min')
+    unsubtracted_heat_flow = Quantity(type=np.float64, shape=['*'], unit='mW')
+    baseline_heat_flow = Quantity(type=np.float64, shape=['*'], unit='mW')
     program_temperature = Quantity(type=np.float64, shape=['*'], unit='°C')
     sample_temperature = Quantity(type=np.float64, shape=['*'], unit='°C')
-    approx_gas_flow = Quantity(type=np.float64, shape=['*'])
+    approx_gas_flow = Quantity(type=np.float64, shape=['*'], unit='ml/min')
     heat_flow_calibration = Quantity(type=np.float64, shape=['*'])
-    uncorrected_heat_flow = Quantity(type=np.float64, shape=['*'])
+    uncorrected_heat_flow = Quantity(type=np.float64, shape=['*'], unit='mW')
 
 
 # ==========================================
 # 5. MAIN DSC ENTRY DATA
 # ==========================================
+def extract_float(val: Any) -> Optional[float]:
+    """Helper to safely extract a float from a string containing text/units."""
+    if not isinstance(val, str):
+        return float(val) if val is not None else None
+    match = re.search(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', val.replace(',', '.'))
+    if match:
+        return float(match.group())
+    return None
+
+
 class DSCMeasurement(Measurement, EntryData):
     """Main EntryData schema triggered by the PerkinElmer DSC parser."""
 
@@ -381,25 +401,20 @@ class DSCMeasurement(Measurement, EntryData):
         type=str,
         a_eln=ELNAnnotation(component=ELNComponentEnum.FileEditQuantity),
         a_browser=dict(adaptor='RawFileAdaptor'),
-        description='The uploaded raw data file (.txt) for the DSC measurement.'
     )
 
-    # General Root Metadata
-    sample_id_metadata = Quantity(type=str)
+    sample_id = Quantity(type=str)
     serial_number = Quantity(type=str)
     operator_id = Quantity(type=str)
-    sample_weight = Quantity(type=str)
-    display_weight = Quantity(type=str)
+    sample_weight = Quantity(type=np.float64, unit='mg')
+    display_weight = Quantity(type=np.float64, unit='mg')
     data_collected = Quantity(type=str)
     comments = Quantity(type=str)
-    method_steps = Quantity(type=str, shape=['*'])
 
-    # Validation Metadata
     validation_status = Quantity(type=str)
     validation_by = Quantity(type=str)
     validation_date = Quantity(type=str)
 
-    # Subsections
     calibration_information = SubSection(section_def=DSCCalibrationInformation)
     initial_conditions = SubSection(section_def=DSCInitialConditions)
     manual_tune_calibration = SubSection(section_def=DSCManualTuneCalibration)
@@ -412,6 +427,8 @@ class DSCMeasurement(Measurement, EntryData):
     profile_values = SubSection(section_def=DSCProfileValues)
 
     results = SubSection(section_def=DSCResult, repeats=True)
+
+
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -429,29 +446,29 @@ class DSCMeasurement(Measurement, EntryData):
             logger.error('Failed to parse DSC data file.', exc_info=e)
             return
 
-        # 1. Map Root Metadata
-        self.sample_id_metadata = dsc_data.metadata.get('Sample ID')
+        # 1. Map Root Metadata & Description
+        self.sample_id = dsc_data.metadata.get('Sample ID')
         self.serial_number = dsc_data.metadata.get('Serial Number')
         self.operator_id = dsc_data.metadata.get('Operator ID')
-        self.sample_weight = dsc_data.metadata.get('Sample Weight')
-        self.display_weight = dsc_data.metadata.get('Display Weight')
+        self.sample_weight = extract_float(dsc_data.metadata.get('Sample Weight'))
+        self.display_weight = extract_float(dsc_data.metadata.get('Display Weight'))
         self.data_collected = dsc_data.metadata.get('Data Collected')
         self.comments = dsc_data.metadata.get('Comment')
-        self.method_steps = dsc_data.method_steps
+
+        if dsc_data.method_steps:
+            self.description = "Method Steps:\n" + "\n".join(dsc_data.method_steps)
 
         self.validation_status = dsc_data.metadata.get('Validation_Validated')
         self.validation_by = dsc_data.metadata.get('Validation_By')
         self.validation_date = dsc_data.metadata.get('Validation_Date')
 
-        # Map Calibration Information (Top block)
         cal_info = DSCCalibrationInformation()
         cal_info.filename = dsc_data.metadata.get('Calibration Information_Filename')
         cal_info.date_time = dsc_data.metadata.get('Calibration Information_Date/Time')
         self.calibration_information = cal_info
 
-        # 2. Map Initial Conditions
         ic = DSCInitialConditions()
-        ic.temperature = dsc_data.metadata.get('Initial Conditions_Temperature')
+        ic.temperature = extract_float(dsc_data.metadata.get('Initial Conditions_Temperature'))
         ic.purge_gas = dsc_data.metadata.get('Initial Conditions_Purge Gas')
         ic.purge_gas_rate = dsc_data.metadata.get('Initial Conditions_Purge Gas Rate')
         ic.baseline_filename = dsc_data.metadata.get('Initial Conditions_Baseline Filename')
@@ -459,63 +476,93 @@ class DSCMeasurement(Measurement, EntryData):
         ic.total_points_in_run = dsc_data.metadata.get('Initial Conditions_Total Points in Run')
         self.initial_conditions = ic
 
-        # 3. Map Manual Tune Calibration
         mt = DSCManualTuneCalibration()
-        mt.date = dsc_data.metadata.get('DSC8500 MANUAL TUNE CALIBRATION VALUES_Date')
-        mt.slope = dsc_data.metadata.get('DSC8500 MANUAL TUNE CALIBRATION VALUES_Slope')
-        mt.coarse_balance = dsc_data.metadata.get('DSC8500 MANUAL TUNE CALIBRATION VALUES_Coarse Balance')
-        mt.fine_balance = dsc_data.metadata.get('DSC8500 MANUAL TUNE CALIBRATION VALUES_Fine Balance')
+        mt.date = dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Date')
+        mt.slope = dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Slope')
+        mt.coarse_balance = dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Coarse Balance')
+        mt.fine_balance = dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Fine Balance')
         self.manual_tune_calibration = mt
 
-        # 4. Map SmartScan Calibration
         sc = DSCSmartScanCalibration()
-        sc.date = dsc_data.metadata.get('DSC8500 SMARTSCAN CALIBRATION VALUES_Date')
-        sc.smartscan_enabled = dsc_data.metadata.get('DSC8500 SMARTSCAN CALIBRATION VALUES_SmartScan Enabled')
-        sc.calibration_file = dsc_data.metadata.get('DSC8500 SMARTSCAN CALIBRATION VALUES_Calibration File')
-        sc.starting_temperature = dsc_data.metadata.get('DSC8500 SMARTSCAN CALIBRATION VALUES_Starting Temperature')
-        sc.ending_temperature = dsc_data.metadata.get('DSC8500 SMARTSCAN CALIBRATION VALUES_Ending Temperature')
-        sc.number_of_steps = dsc_data.metadata.get('DSC8500 SMARTSCAN CALIBRATION VALUES_Number of Steps')
+        sc.date = dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Date')
+        sc.smartscan_enabled = dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_SmartScan Enabled')
+        sc.calibration_file = dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Calibration File')
+        sc.starting_temperature = extract_float(dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Starting Temperature'))
+        sc.ending_temperature = extract_float(dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Ending Temperature'))
+        sc.number_of_steps = extract_float(dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Number of Steps'))
         self.smartscan_calibration = sc
 
-        # 5. Map Sample Temperature Calibration
+        # Process Sample Temperature Table
         st_cal = DSCSampleTemperatureCalibration()
-        st_cal.date = dsc_data.metadata.get('DSC8500 SAMPLE TEMPERATURE CALIBRATION VALUES_Date')
-        st_cal.reference = dsc_data.metadata.get('DSC8500 SAMPLE TEMPERATURE CALIBRATION VALUES_Reference')
-        st_cal.indium = dsc_data.metadata.get('DSC8500 SAMPLE TEMPERATURE CALIBRATION VALUES_Indium')
+        st_cal.date = dsc_data.metadata.get('SAMPLE TEMPERATURE CALIBRATION VALUES_Date')
+        st_table = dsc_data.tables.get('SAMPLE TEMPERATURE CALIBRATION VALUES', [])
+        if len(st_table) > 1:
+            refs, exps, meas, wgts, scans = [], [], [], [], []
+            for row in st_table[1:]:
+                refs.append(row[0] if len(row) > 0 else "")
+                exps.append(extract_float(row[1]) if len(row) > 1 else None)
+                meas.append(extract_float(row[2]) if len(row) > 2 else None)
+                wgts.append(extract_float(row[3]) if len(row) > 3 else None)
+                scans.append(extract_float(row[4]) if len(row) > 4 else None)
+            st_cal.reference = refs
+            st_cal.expected_temperature = exps
+            st_cal.measured_temperature = meas
+            st_cal.weight = wgts
+            st_cal.scan_rate = scans
         self.sample_temperature_calibration = st_cal
 
-        # 6. Map Furnace Temperature Calibration
         ft = DSCFurnaceTemperatureCalibration()
-        ft.minimum = dsc_data.metadata.get('DSC8500 FURNACE TEMPERATURE CALIBRATION VALUES_Minimum')
-        ft.maximum = dsc_data.metadata.get('DSC8500 FURNACE TEMPERATURE CALIBRATION VALUES_Maximum')
+        ft.minimum = extract_float(dsc_data.metadata.get('FURNACE TEMPERATURE CALIBRATION VALUES_Minimum'))
+        ft.maximum = extract_float(dsc_data.metadata.get('FURNACE TEMPERATURE CALIBRATION VALUES_Maximum'))
         self.furnace_temperature_calibration = ft
 
-        # 7. Map Furnace Calibration Computed Results
+        # Process Furnace Computed Results Table
         fc_comp = DSCFurnaceCalibrationComputed()
         fc_comp.date = dsc_data.metadata.get('FURNACE CALIBRATION COMPUTED RESULTS_Date')
-        fc_comp.setpoints = dsc_data.metadata.get('FURNACE CALIBRATION COMPUTED RESULTS_Setpoints (°C)')
+        fc_table = dsc_data.tables.get('FURNACE CALIBRATION COMPUTED RESULTS', [])
+        if len(fc_table) > 1:
+            sets, bounds, ys = [], [], []
+            for row in fc_table[1:]:
+                sets.append(extract_float(row[0]) if len(row) > 0 else None)
+                bounds.append(extract_float(row[1]) if len(row) > 1 else None)
+                ys.append(extract_float(row[2]) if len(row) > 2 else None)
+            fc_comp.setpoints = sets
+            fc_comp.boundaries = bounds
+            fc_comp.y_double_prime = ys
         self.furnace_calibration_computed = fc_comp
 
-        # 8. Map Heat Flow Calibration Values
+        # Process Heat Flow Table
         hf_val = DSCHeatFlowCalibrationValues()
-        hf_val.reference = dsc_data.metadata.get('DSC8500 HEAT FLOW CALIBRATION VALUES_Reference')
-        hf_val.indium = dsc_data.metadata.get('DSC8500 HEAT FLOW CALIBRATION VALUES_Indium')
+        hf_table = dsc_data.tables.get('HEAT FLOW CALIBRATION VALUES', [])
+        if len(hf_table) > 1:
+            refs, temps, exps, meas, wgts, scans = [], [], [], [], [], []
+            for row in hf_table[1:]:
+                refs.append(row[0] if len(row) > 0 else "")
+                temps.append(extract_float(row[1]) if len(row) > 1 else None)
+                exps.append(extract_float(row[2]) if len(row) > 2 else None)
+                meas.append(extract_float(row[3]) if len(row) > 3 else None)
+                wgts.append(extract_float(row[4]) if len(row) > 4 else None)
+                scans.append(extract_float(row[5]) if len(row) > 5 else None)
+            hf_val.reference = refs
+            hf_val.temperature = temps
+            hf_val.expected = exps
+            hf_val.measured = meas
+            hf_val.weight = wgts
+            hf_val.scan_rate = scans
         self.heat_flow_calibration_values = hf_val
 
-        # 9. Map Heat Flow Calibration Computed Results
         hf_comp = DSCHeatFlowCalibrationComputed()
-        hf_comp.date = dsc_data.metadata.get('DSC8500 HEAT FLOW CALIBRATION COMPUTED RESULTS_Date')
-        hf_comp.k_ts = dsc_data.metadata.get('DSC8500 HEAT FLOW CALIBRATION COMPUTED RESULTS_K(Ts)')
+        hf_comp.date = dsc_data.metadata.get('HEAT FLOW CALIBRATION COMPUTED RESULTS_Date')
+        hf_comp.k_ts = dsc_data.metadata.get('HEAT FLOW CALIBRATION COMPUTED RESULTS_K(Ts)')
         self.heat_flow_calibration_computed = hf_comp
 
-        # 10. Map Profile Values
         pv = DSCProfileValues()
         pv.software_version = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Software Version')
         pv.firmware_version = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Firmware Version')
         pv.instrument_serial_number = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Instrument Serial Number')
-        pv.load_temperature = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Load Temperature')
-        pv.go_to_temp_rate = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Go To Temp Rate')
-        pv.maximum_allowed_temperature = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Maximum Allowed Temperature')
+        pv.load_temperature = extract_float(dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Load Temperature'))
+        pv.go_to_temp_rate = extract_float(dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Go To Temp Rate'))
+        pv.maximum_allowed_temperature = extract_float(dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Maximum Allowed Temperature'))
         pv.helium_purge = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Helium Purge')
         pv.liquid_nitrogen = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Liquid Nitrogen')
         pv.data_taken_using_the = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Data taken using the')
@@ -536,7 +583,7 @@ class DSCMeasurement(Measurement, EntryData):
         res.program_temperature = dsc_data.program_temperature
         res.sample_temperature = dsc_data.sample_temperature
         res.approx_gas_flow = dsc_data.approx_gas_flow
-        res.heat_flow_calibration = dsc_data.calibration
-        res.uncorrected_heat_flow = dsc_data.heat_flow
+        res.heat_flow_calibration = dsc_data.heat_flow_calibration
+        res.uncorrected_heat_flow = dsc_data.uncorrected_heat_flow
 
 m_package.__init_metainfo__()
