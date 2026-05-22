@@ -31,7 +31,7 @@ OE_TO_AM = 1000.0 / (4.0 * np.pi)  # Oersted to A/m
 # ==========================================
 # 0. UNIVERSAL THERMAL BASE CLASS
 # ==========================================
-class ThermalMeasurementBase(Measurement):
+class ThermalMeasurementBase(Measurement, EntryData):
     """Base class containing fields universal to ALL thermal analysis techniques."""
 
     data_file = Quantity(
@@ -106,7 +106,7 @@ class ThermalResult(MeasurementResult):
     therm_exp_coeff_baseline = Quantity(type=np.float64, shape=['*'], unit='ppm/K')
     therm_exp_coeff_reference = Quantity(type=np.float64, shape=['*'], unit='ppm/K')
 
-class DilatometryMeasurement(ThermalMeasurementBase, EntryData):
+class DilatometryMeasurement(ThermalMeasurementBase):
     """Instantiable schema for Quantum Design Dilatometry measurements."""
     m_def = Section(a_eln=dict(lane_width='600px'))
 
@@ -275,7 +275,7 @@ class DSCProfileValues(ArchiveSection):
     autoslope_used = Quantity(type=str)
 
 
-class PerkinElmerDSCMeasurement(DSCMeasurementBase, EntryData):
+class PerkinElmerDSCMeasurement(DSCMeasurementBase):
     """Instantiable schema specifically for PerkinElmer DSC text files."""
     m_def = Section(a_eln=dict(lane_width='600px'))
 
