@@ -296,103 +296,89 @@ class ThermalMeasurement(Measurement, EntryData):
 # ==========================================
 class DSCCalibrationInformation(ArchiveSection):
     filename = Quantity(type=str, description='Calibration configuration filename.')
-    date_time = Quantity(type=str, description='Calibration Date/Time.')
+    date_time = Quantity(type=str, description='Calibration date and time.')
 
 class DSCInitialConditions(ArchiveSection):
-    temperature = Quantity(type=np.float64, unit='°C', description='Initial temperature.')
-    purge_gas = Quantity(type=str, description='Purge gas used.')
-    purge_gas_rate = Quantity(type=str, description='Purge gas rate.')
-    baseline_filename = Quantity(type=str, description='Baseline filename.')
-    end_condition = Quantity(type=str, description='End condition.')
-    total_points_in_run = Quantity(type=str, description='Total points in run.')
+    temperature = Quantity(type=np.float64, unit='°C', description='Initial start temperature.')
+    purge_gas = Quantity(type=str, description='Purge gas used in the chamber.')
+    purge_gas_rate = Quantity(type=str, description='Flow rate of the purge gas.')
+    baseline_filename = Quantity(type=str, description='Filename for the applied baseline.')
+    end_condition = Quantity(type=str, description='Instrument condition after the run.')
+    total_points_in_run = Quantity(type=np.float64, description='Total number of data points collected.')
 
 class DSCManualTuneCalibration(ArchiveSection):
-    date = Quantity(type=str)
-    slope = Quantity(type=str)
-    coarse_balance = Quantity(type=str)
-    fine_balance = Quantity(type=str)
+    date = Quantity(type=str, description='Date of manual tune calibration.')
+    slope = Quantity(type=np.float64, description='Slope value from manual tuning.')
+    coarse_balance = Quantity(type=np.float64, description='Coarse balance setting.')
+    fine_balance = Quantity(type=np.float64, description='Fine balance setting.')
 
 class DSCSmartScanCalibration(ArchiveSection):
-    date = Quantity(type=str)
-    smartscan_enabled = Quantity(type=str)
-    calibration_file = Quantity(type=str)
-    starting_temperature = Quantity(type=np.float64, unit='°C')
-    ending_temperature = Quantity(type=np.float64, unit='°C')
-    number_of_steps = Quantity(type=np.float64)
+    date = Quantity(type=str, description='Date of SmartScan calibration.')
+    smartscan_enabled = Quantity(type=str, description='Indicates whether SmartScan was enabled.')
+    calibration_file = Quantity(type=str, description='Calibration file used for SmartScan.')
+    starting_temperature = Quantity(type=np.float64, unit='°C', description='Start temperature of SmartScan.')
+    ending_temperature = Quantity(type=np.float64, unit='°C', description='End temperature of SmartScan.')
+    number_of_steps = Quantity(type=np.float64, description='Number of steps in the SmartScan profile.')
 
 class DSCSampleTemperatureCalibration(ArchiveSection):
-    date = Quantity(type=str)
-    reference = Quantity(type=str, shape=['*'], description='Reference Material')
-    expected_temperature = Quantity(type=np.float64, shape=['*'], unit='°C')
-    measured_temperature = Quantity(type=np.float64, shape=['*'], unit='°C')
-    weight = Quantity(type=np.float64, shape=['*'], unit='mg')
-    scan_rate = Quantity(type=np.float64, shape=['*'], unit='°C/min')
+    date = Quantity(type=str, description='Date of sample temperature calibration.')
+    reference = Quantity(type=str, shape=['*'], description='Reference materials (e.g., Indium).')
+    expected_temperature = Quantity(type=np.float64, shape=['*'], unit='°C', description='Expected transition temperature.')
+    measured_temperature = Quantity(type=np.float64, shape=['*'], unit='°C', description='Measured transition temperature.')
+    weight = Quantity(type=np.float64, shape=['*'], unit='mg', description='Weight of reference material.')
+    scan_rate = Quantity(type=np.float64, shape=['*'], unit='°C/min', description='Scan rate used during calibration.')
 
 class DSCFurnaceTemperatureCalibration(ArchiveSection):
-    minimum = Quantity(type=np.float64, unit='°C', description='Minimum furnace temperature.')
-    maximum = Quantity(type=np.float64, unit='°C', description='Maximum furnace temperature.')
+    minimum = Quantity(type=np.float64, unit='°C', description='Minimum furnace calibration temperature.')
+    maximum = Quantity(type=np.float64, unit='°C', description='Maximum furnace calibration temperature.')
 
 class DSCFurnaceCalibrationComputed(ArchiveSection):
-    date = Quantity(type=str)
-    setpoints = Quantity(type=np.float64, shape=['*'], unit='°C')
-    boundaries = Quantity(type=np.float64, shape=['*'], unit='°C')
-    y_double_prime = Quantity(type=np.float64, shape=['*'])
+    date = Quantity(type=str, description='Date furnace calibration was computed.')
+    setpoints = Quantity(type=np.float64, shape=['*'], unit='°C', description='Furnace calibration temperature setpoints.')
+    boundaries = Quantity(type=np.float64, shape=['*'], unit='°C', description='Computed furnace boundaries.')
+    y_double_prime = Quantity(type=np.float64, shape=['*'], description='Second derivative values for control loop.')
 
 class DSCHeatFlowCalibrationValues(ArchiveSection):
-    reference = Quantity(type=str, shape=['*'])
-    temperature = Quantity(type=np.float64, shape=['*'], unit='°C')
-    expected = Quantity(type=np.float64, shape=['*'], unit='J/g')
-    measured = Quantity(type=np.float64, shape=['*'], unit='J/g')
-    weight = Quantity(type=np.float64, shape=['*'], unit='mg')
-    scan_rate = Quantity(type=np.float64, shape=['*'], unit='°C/min')
+    reference = Quantity(type=str, shape=['*'], description='Reference materials used for heat flow.')
+    temperature = Quantity(type=np.float64, shape=['*'], unit='°C', description='Calibration temperatures.')
+    expected = Quantity(type=np.float64, shape=['*'], unit='J/g', description='Expected heat capacity/enthalpy.')
+    measured = Quantity(type=np.float64, shape=['*'], unit='J/g', description='Measured heat capacity/enthalpy.')
+    weight = Quantity(type=np.float64, shape=['*'], unit='mg', description='Weight of reference material.')
+    scan_rate = Quantity(type=np.float64, shape=['*'], unit='°C/min', description='Scan rate used for heat flow calibration.')
 
 class DSCHeatFlowCalibrationComputed(ArchiveSection):
-    date = Quantity(type=str)
-    k_ts = Quantity(type=str, description='K(Ts) calibration polynomial (if extracted).')
+    date = Quantity(type=str, description='Date heat flow calibration was computed.')
+    k_ts = Quantity(type=str, description='Polynomial K(Ts) used to correct heat flow.')
 
 class DSCProfileValues(ArchiveSection):
-    software_version = Quantity(type=str)
-    firmware_version = Quantity(type=str)
-    instrument_serial_number = Quantity(type=str)
-    load_temperature = Quantity(type=np.float64, unit='°C')
-    go_to_temp_rate = Quantity(type=np.float64, unit='°C/min')
-    maximum_allowed_temperature = Quantity(type=np.float64, unit='°C')
-    helium_purge = Quantity(type=str)
-    liquid_nitrogen = Quantity(type=str)
-    data_taken_using_the = Quantity(type=str)
-    filter_factor = Quantity(type=str)
-    cooling_device = Quantity(type=str)
-    wavelet_denoising_used = Quantity(type=str)
-    autoslope_used = Quantity(type=str)
+    software_version = Quantity(type=str, description='Software version used.')
+    firmware_version = Quantity(type=str, description='Instrument firmware version.')
+    instrument_serial_number = Quantity(type=str, description='Hardware serial number.')
+    load_temperature = Quantity(type=np.float64, unit='°C', description='Sample load temperature.')
+    go_to_temp_rate = Quantity(type=np.float64, unit='°C/min', description='Rate used for Go To Temp commands.')
+    maximum_allowed_temperature = Quantity(type=np.float64, unit='°C', description='Maximum allowed instrument temperature.')
+    helium_purge = Quantity(type=str, description='Indicates if a Helium purge was used.')
+    liquid_nitrogen = Quantity(type=str, description='Indicates if Liquid Nitrogen cooling was used.')
+    data_taken_using_the = Quantity(type=str, description='Operational range applied.')
+    filter_factor = Quantity(type=np.float64, description='Applied signal filtering factor.')
+    cooling_device = Quantity(type=str, description='Type of cooling accessory installed.')
+    wavelet_denoising_used = Quantity(type=str, description='Indicates if wavelet denoising was used.')
+    autoslope_used = Quantity(type=str, description='Indicates if autoslope correction was active.')
 
 class DSCResult(MeasurementResult):
-    """Section for storing extracted DSC data arrays with proper Units."""
-    time = Quantity(type=np.float64, shape=['*'], unit='min')
-    unsubtracted_heat_flow = Quantity(type=np.float64, shape=['*'], unit='mW')
-    baseline_heat_flow = Quantity(type=np.float64, shape=['*'], unit='mW')
-    program_temperature = Quantity(type=np.float64, shape=['*'], unit='°C')
-    sample_temperature = Quantity(type=np.float64, shape=['*'], unit='°C')
-    approx_gas_flow = Quantity(type=np.float64, shape=['*'], unit='ml/min')
-    heat_flow_calibration = Quantity(type=np.float64, shape=['*'])
-    uncorrected_heat_flow = Quantity(type=np.float64, shape=['*'], unit='mW')
-
+    time = Quantity(type=np.float64, shape=['*'], description='Elapsed measurement time.')
+    unsubtracted_heat_flow = Quantity(type=np.float64, shape=['*'], description='Raw heat flow before baseline subtraction.')
+    baseline_heat_flow = Quantity(type=np.float64, shape=['*'], description='Measured or interpolated baseline heat flow.')
+    program_temperature = Quantity(type=np.float64, shape=['*'], description='Target program temperature.')
+    sample_temperature = Quantity(type=np.float64, shape=['*'], description='Actual measured sample temperature.')
+    approx_gas_flow = Quantity(type=np.float64, shape=['*'], description='Approximate flow rate of the purge gas.')
+    heat_flow_calibration = Quantity(type=np.float64, shape=['*'], description='Dynamic heat flow calibration multiplier.')
+    uncorrected_heat_flow = Quantity(type=np.float64, shape=['*'], description='Heat flow value prior to final correction.')
 
 # ==========================================
 # 5. MAIN DSC ENTRY DATA
 # ==========================================
-def extract_float(val: Any) -> Optional[float]:
-    """Helper to safely extract a float from a string containing text/units."""
-    if not isinstance(val, str):
-        return float(val) if val is not None else None
-    match = re.search(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', val.replace(',', '.'))
-    if match:
-        return float(match.group())
-    return None
-
-
 class DSCMeasurement(Measurement, EntryData):
-    """Main EntryData schema triggered by the PerkinElmer DSC parser."""
-
     m_def = Section(
         a_eln=dict(lane_width='600px'),
     )
@@ -401,19 +387,20 @@ class DSCMeasurement(Measurement, EntryData):
         type=str,
         a_eln=ELNAnnotation(component=ELNComponentEnum.FileEditQuantity),
         a_browser=dict(adaptor='RawFileAdaptor'),
+        description='The uploaded raw data file (.txt) for the DSC measurement.'
     )
 
-    sample_id = Quantity(type=str)
-    serial_number = Quantity(type=str)
-    operator_id = Quantity(type=str)
-    sample_weight = Quantity(type=np.float64, unit='mg')
-    display_weight = Quantity(type=np.float64, unit='mg')
-    data_collected = Quantity(type=str)
-    comments = Quantity(type=str)
+    sample_id = Quantity(type=str, description='Name or identifier of the sample.')
+    serial_number = Quantity(type=str, description='Serial number of the specific sample or batch.')
+    operator_id = Quantity(type=str, description='Name or identifier of the user operating the instrument.')
+    sample_weight = Quantity(type=np.float64, unit='mg', description='Mass of the sample.')
+    display_weight = Quantity(type=np.float64, unit='mg', description='Mass displayed/registered on the UI.')
+    data_collected = Quantity(type=str, description='Date and time the actual measurement began.')
+    comments = Quantity(type=str, description='Free text comments, often containing mass equations.')
 
-    validation_status = Quantity(type=str)
-    validation_by = Quantity(type=str)
-    validation_date = Quantity(type=str)
+    validation_status = Quantity(type=str, description='Whether the data was validated.')
+    validation_by = Quantity(type=str, description='User who validated the data.')
+    validation_date = Quantity(type=str, description='Date the data was validated.')
 
     calibration_information = SubSection(section_def=DSCCalibrationInformation)
     initial_conditions = SubSection(section_def=DSCInitialConditions)
@@ -428,7 +415,14 @@ class DSCMeasurement(Measurement, EntryData):
 
     results = SubSection(section_def=DSCResult, repeats=True)
 
-
+    def _extract_float(self, val: Any) -> Optional[float]:
+        """Helper to safely extract a float from a string containing text/units."""
+        if not isinstance(val, str):
+            return float(val) if val is not None else None
+        match = re.search(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', val.replace(',', '.'))
+        if match:
+            return float(match.group())
+        return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -450,8 +444,8 @@ class DSCMeasurement(Measurement, EntryData):
         self.sample_id = dsc_data.metadata.get('Sample ID')
         self.serial_number = dsc_data.metadata.get('Serial Number')
         self.operator_id = dsc_data.metadata.get('Operator ID')
-        self.sample_weight = extract_float(dsc_data.metadata.get('Sample Weight'))
-        self.display_weight = extract_float(dsc_data.metadata.get('Display Weight'))
+        self.sample_weight = self._extract_float(dsc_data.metadata.get('Sample Weight'))
+        self.display_weight = self._extract_float(dsc_data.metadata.get('Display Weight'))
         self.data_collected = dsc_data.metadata.get('Data Collected')
         self.comments = dsc_data.metadata.get('Comment')
 
@@ -468,31 +462,30 @@ class DSCMeasurement(Measurement, EntryData):
         self.calibration_information = cal_info
 
         ic = DSCInitialConditions()
-        ic.temperature = extract_float(dsc_data.metadata.get('Initial Conditions_Temperature'))
+        ic.temperature = self._extract_float(dsc_data.metadata.get('Initial Conditions_Temperature'))
         ic.purge_gas = dsc_data.metadata.get('Initial Conditions_Purge Gas')
         ic.purge_gas_rate = dsc_data.metadata.get('Initial Conditions_Purge Gas Rate')
         ic.baseline_filename = dsc_data.metadata.get('Initial Conditions_Baseline Filename')
         ic.end_condition = dsc_data.metadata.get('Initial Conditions_End Condition')
-        ic.total_points_in_run = dsc_data.metadata.get('Initial Conditions_Total Points in Run')
+        ic.total_points_in_run = self._extract_float(dsc_data.metadata.get('Initial Conditions_Total Points in Run'))
         self.initial_conditions = ic
 
         mt = DSCManualTuneCalibration()
         mt.date = dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Date')
-        mt.slope = dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Slope')
-        mt.coarse_balance = dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Coarse Balance')
-        mt.fine_balance = dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Fine Balance')
+        mt.slope = self._extract_float(dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Slope'))
+        mt.coarse_balance = self._extract_float(dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Coarse Balance'))
+        mt.fine_balance = self._extract_float(dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Fine Balance'))
         self.manual_tune_calibration = mt
 
         sc = DSCSmartScanCalibration()
         sc.date = dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Date')
         sc.smartscan_enabled = dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_SmartScan Enabled')
         sc.calibration_file = dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Calibration File')
-        sc.starting_temperature = extract_float(dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Starting Temperature'))
-        sc.ending_temperature = extract_float(dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Ending Temperature'))
-        sc.number_of_steps = extract_float(dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Number of Steps'))
+        sc.starting_temperature = self._extract_float(dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Starting Temperature'))
+        sc.ending_temperature = self._extract_float(dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Ending Temperature'))
+        sc.number_of_steps = self._extract_float(dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Number of Steps'))
         self.smartscan_calibration = sc
 
-        # Process Sample Temperature Table
         st_cal = DSCSampleTemperatureCalibration()
         st_cal.date = dsc_data.metadata.get('SAMPLE TEMPERATURE CALIBRATION VALUES_Date')
         st_table = dsc_data.tables.get('SAMPLE TEMPERATURE CALIBRATION VALUES', [])
@@ -500,10 +493,10 @@ class DSCMeasurement(Measurement, EntryData):
             refs, exps, meas, wgts, scans = [], [], [], [], []
             for row in st_table[1:]:
                 refs.append(row[0] if len(row) > 0 else "")
-                exps.append(extract_float(row[1]) if len(row) > 1 else None)
-                meas.append(extract_float(row[2]) if len(row) > 2 else None)
-                wgts.append(extract_float(row[3]) if len(row) > 3 else None)
-                scans.append(extract_float(row[4]) if len(row) > 4 else None)
+                exps.append(self._extract_float(row[1]) if len(row) > 1 else None)
+                meas.append(self._extract_float(row[2]) if len(row) > 2 else None)
+                wgts.append(self._extract_float(row[3]) if len(row) > 3 else None)
+                scans.append(self._extract_float(row[4]) if len(row) > 4 else None)
             st_cal.reference = refs
             st_cal.expected_temperature = exps
             st_cal.measured_temperature = meas
@@ -512,37 +505,35 @@ class DSCMeasurement(Measurement, EntryData):
         self.sample_temperature_calibration = st_cal
 
         ft = DSCFurnaceTemperatureCalibration()
-        ft.minimum = extract_float(dsc_data.metadata.get('FURNACE TEMPERATURE CALIBRATION VALUES_Minimum'))
-        ft.maximum = extract_float(dsc_data.metadata.get('FURNACE TEMPERATURE CALIBRATION VALUES_Maximum'))
+        ft.minimum = self._extract_float(dsc_data.metadata.get('FURNACE TEMPERATURE CALIBRATION VALUES_Minimum'))
+        ft.maximum = self._extract_float(dsc_data.metadata.get('FURNACE TEMPERATURE CALIBRATION VALUES_Maximum'))
         self.furnace_temperature_calibration = ft
 
-        # Process Furnace Computed Results Table
         fc_comp = DSCFurnaceCalibrationComputed()
         fc_comp.date = dsc_data.metadata.get('FURNACE CALIBRATION COMPUTED RESULTS_Date')
         fc_table = dsc_data.tables.get('FURNACE CALIBRATION COMPUTED RESULTS', [])
         if len(fc_table) > 1:
             sets, bounds, ys = [], [], []
             for row in fc_table[1:]:
-                sets.append(extract_float(row[0]) if len(row) > 0 else None)
-                bounds.append(extract_float(row[1]) if len(row) > 1 else None)
-                ys.append(extract_float(row[2]) if len(row) > 2 else None)
+                sets.append(self._extract_float(row[0]) if len(row) > 0 else None)
+                bounds.append(self._extract_float(row[1]) if len(row) > 1 else None)
+                ys.append(self._extract_float(row[2]) if len(row) > 2 else None)
             fc_comp.setpoints = sets
             fc_comp.boundaries = bounds
             fc_comp.y_double_prime = ys
         self.furnace_calibration_computed = fc_comp
 
-        # Process Heat Flow Table
         hf_val = DSCHeatFlowCalibrationValues()
         hf_table = dsc_data.tables.get('HEAT FLOW CALIBRATION VALUES', [])
         if len(hf_table) > 1:
             refs, temps, exps, meas, wgts, scans = [], [], [], [], [], []
             for row in hf_table[1:]:
                 refs.append(row[0] if len(row) > 0 else "")
-                temps.append(extract_float(row[1]) if len(row) > 1 else None)
-                exps.append(extract_float(row[2]) if len(row) > 2 else None)
-                meas.append(extract_float(row[3]) if len(row) > 3 else None)
-                wgts.append(extract_float(row[4]) if len(row) > 4 else None)
-                scans.append(extract_float(row[5]) if len(row) > 5 else None)
+                temps.append(self._extract_float(row[1]) if len(row) > 1 else None)
+                exps.append(self._extract_float(row[2]) if len(row) > 2 else None)
+                meas.append(self._extract_float(row[3]) if len(row) > 3 else None)
+                wgts.append(self._extract_float(row[4]) if len(row) > 4 else None)
+                scans.append(self._extract_float(row[5]) if len(row) > 5 else None)
             hf_val.reference = refs
             hf_val.temperature = temps
             hf_val.expected = exps
@@ -560,19 +551,18 @@ class DSCMeasurement(Measurement, EntryData):
         pv.software_version = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Software Version')
         pv.firmware_version = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Firmware Version')
         pv.instrument_serial_number = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Instrument Serial Number')
-        pv.load_temperature = extract_float(dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Load Temperature'))
-        pv.go_to_temp_rate = extract_float(dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Go To Temp Rate'))
-        pv.maximum_allowed_temperature = extract_float(dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Maximum Allowed Temperature'))
+        pv.load_temperature = self._extract_float(dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Load Temperature'))
+        pv.go_to_temp_rate = self._extract_float(dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Go To Temp Rate'))
+        pv.maximum_allowed_temperature = self._extract_float(dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Maximum Allowed Temperature'))
         pv.helium_purge = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Helium Purge')
         pv.liquid_nitrogen = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Liquid Nitrogen')
         pv.data_taken_using_the = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Data taken using the')
-        pv.filter_factor = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Filter Factor')
+        pv.filter_factor = self._extract_float(dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Filter Factor'))
         pv.cooling_device = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Cooling Device')
         pv.wavelet_denoising_used = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Wavelet Denoising used')
         pv.autoslope_used = dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Autoslope Used')
         self.profile_values = pv
 
-        # 11. Map Results Arrays
         if not self.results:
             self.results = [DSCResult()]
 
