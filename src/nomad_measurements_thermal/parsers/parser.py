@@ -3,8 +3,8 @@ from nomad.parsing.parser import MatchingParser
 
 # Import both specialized schemas
 from nomad_measurements_thermal.schema_packages.schema_package import (
-    ThermalMeasurement,
-    DSCMeasurement,
+    DilatometryMeasurement,
+    PerkinElmerDSCMeasurement,
 )
 
 
@@ -66,13 +66,13 @@ class ThermalParser(MatchingParser):
         with archive.m_context.raw_file(filename, 'r') as f:
             content_peek = f.read(2000)
 
-        # Route based on content signatures
+        # Route based on content signatures using the newly refactored class names
         if '[Header]' in content_peek and '[Data]' in content_peek:
             logger.info('Routing to Dilatometry schema.')
-            entry = ThermalMeasurement()
+            entry = DilatometryMeasurement()
         elif 'Method Steps:' in content_peek and 'Sample Weight:' in content_peek:
             logger.info('Routing to PerkinElmer DSC schema.')
-            entry = DSCMeasurement()
+            entry = PerkinElmerDSCMeasurement()
         else:
             logger.error(f'Unrecognized thermal file format: {filename}')
             return
