@@ -3,8 +3,8 @@ from nomad.parsing.parser import MatchingParser
 
 # Import both specialized schemas
 from nomad_measurements_thermal.schema_packages.schema_package import (
-    ThermalMeasurement,
-    DSCMeasurement,
+    DilatometryMeasurement,
+    PerkinElmerDSCMeasurement,
 )
 
 
@@ -25,7 +25,9 @@ class ThermalParser(MatchingParser):
             return False
 
         # 1. Dilatometry Check
-        has_dilatometry_sections = '[Header]' in decoded_buffer and '[Data]' in decoded_buffer
+        has_dilatometry_sections = (
+            '[Header]' in decoded_buffer and '[Data]' in decoded_buffer
+        )
         has_dilatometry_marker = any(
             marker in decoded_buffer
             for marker in (
@@ -41,9 +43,9 @@ class ThermalParser(MatchingParser):
 
         # 2. PerkinElmer DSC Check
         has_dsc_markers = (
-            'Sample Weight:' in decoded_buffer and
-            'Method Steps:' in decoded_buffer and
-            'Heat Flow' in decoded_buffer
+            'Sample Weight:' in decoded_buffer
+            and 'Method Steps:' in decoded_buffer
+            and 'Heat Flow' in decoded_buffer
         )
         if has_dsc_markers:
             return True
@@ -66,13 +68,13 @@ class ThermalParser(MatchingParser):
         with archive.m_context.raw_file(filename, 'r') as f:
             content_peek = f.read(2000)
 
-        # Route based on content signatures
+        # Route based on content signatures using the newly refactored class names
         if '[Header]' in content_peek and '[Data]' in content_peek:
             logger.info('Routing to Dilatometry schema.')
-            entry = ThermalMeasurement()
+            entry = DilatometryMeasurement()
         elif 'Method Steps:' in content_peek and 'Sample Weight:' in content_peek:
             logger.info('Routing to PerkinElmer DSC schema.')
-            entry = DSCMeasurement()
+            entry = PerkinElmerDSCMeasurement()
         else:
             logger.error(f'Unrecognized thermal file format: {filename}')
             return
