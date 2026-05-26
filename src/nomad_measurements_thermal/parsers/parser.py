@@ -25,7 +25,9 @@ class ThermalParser(MatchingParser):
             return False
 
         # 1. Dilatometry Check
-        has_dilatometry_sections = '[Header]' in decoded_buffer and '[Data]' in decoded_buffer
+        has_dilatometry_sections = (
+            '[Header]' in decoded_buffer and '[Data]' in decoded_buffer
+        )
         has_dilatometry_marker = any(
             marker in decoded_buffer
             for marker in (
@@ -41,9 +43,9 @@ class ThermalParser(MatchingParser):
 
         # 2. PerkinElmer DSC Check
         has_dsc_markers = (
-            'Sample Weight:' in decoded_buffer and
-            'Method Steps:' in decoded_buffer and
-            'Heat Flow' in decoded_buffer
+            'Sample Weight:' in decoded_buffer
+            and 'Method Steps:' in decoded_buffer
+            and 'Heat Flow' in decoded_buffer
         )
         if has_dsc_markers:
             return True
