@@ -17,6 +17,8 @@ from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection
 from readers_ientrance.thermal_reader import read_thermal_dat
 # Import the reader package for DSC
 from readers_ientrance import read_perkinelmer_dsc
+# Import the reader package for TA Instruments DSC
+from readers_ientrance.ta_dsc_reader import read_ta_dsc
 
 configuration = config.get_plugin_entry_point(
     'nomad_measurements_thermal.schema_packages:schema_package_entry_point'
@@ -375,6 +377,14 @@ class DSCResult(MeasurementResult):
     heat_flow_calibration = Quantity(type=np.float64, shape=['*'], description='Dynamic heat flow calibration multiplier.')
     uncorrected_heat_flow = Quantity(type=np.float64, shape=['*'], description='Heat flow value prior to final correction.')
 
+class TADSCResult(MeasurementResult):
+    """Dedicated DSC Results section for TA Instruments with explicit units."""
+    time = Quantity(type=np.float64, shape=['*'], unit='min', description='Elapsed measurement time.')
+    sample_temperature = Quantity(type=np.float64, shape=['*'], unit='°C', description='Actual measured sample temperature.')
+    heat_flow = Quantity(type=np.float64, shape=['*'], unit='mW', description='Measured heat flow.')
+    heat_capacity = Quantity(type=np.float64, shape=['*'], unit='mJ/°C', description='Measured heat capacity.')
+    approx_gas_flow = Quantity(type=np.float64, shape=['*'], unit='ml/min', description='Flow rate of the sample purge gas.')
+
 # ==========================================
 # 5. MAIN DSC ENTRY DATA
 # ==========================================
@@ -575,5 +585,119 @@ class DSCMeasurement(Measurement, EntryData):
         res.approx_gas_flow = dsc_data.approx_gas_flow
         res.heat_flow_calibration = dsc_data.heat_flow_calibration
         res.uncorrected_heat_flow = dsc_data.uncorrected_heat_flow
+
+
+# ==========================================
+# 4. TA INSTRUMENTS DSC MEASUREMENT
+# ==========================================
+class TADSCMeasurement(Measurement, EntryData):
+    """Standalone entry schema for TA Instruments DSC text files."""
+    m_def = Section(a_eln=dict(lane_width='600px'))
+
+    data_file = Quantity(
+        type=str,
+        a_eln=ELNAnnotation(component=ELNComponentEnum.FileEditQuantity),
+        a_browser=dict(adaptor='RawFileAdaptor'),
+        description='The uploaded raw data file (.txt) for the TA DSC measurement.'
+    )
+
+    # Core Metadata Fields
+    sample_id = Quantity(type=str, description='Name or identifier of the sample.')
+    operator_id = Quantity(type=str, description='Name or identifier of the user operating the instrument.')
+    sample_weight = Quantity(type=np.float64, unit='mg', description='Mass of the sample.')
+    data_collected = Quantity(type=str, description='Date and time the actual measurement began.')
+    comments = Quantity(type=str, description='Free text comments from the metadata.')
+
+    # TA Specific Metadata Fields
+    instrument = Quantity(type=str, description='Instrument model and version string.')
+    module = Quantity(type=str, description='Instrument module compartment description.')
+    mode = Quantity(type=str, description='Measurement mode configuration.')
+    method = Quantity(type=str, description='Configured run method type.')
+    pan_mass = Quantity(type=str, description='Recorded mass values for the sample pan and lid.')
+    cell_constant = Quantity(type=np.float64, description='Calculated cell constant value (Kcell).')
+    cooling_unit = Quantity(type=str, description='Type of cooling accessory unit attached.')
+
+    # Calibration File Sub-fields
+    calibration_file_tzero = Quantity(type=str, description='Path to the applied Tzero calibration file.')
+    calibration_file_baseline = Quantity(type=str, description='Path to the applied Baseline calibration file.')
+    calibration_file_sapphire = Quantity(type=str, description='Path to the applied Sapphire calibration file.')
+
+    results = SubSection(section_def=TADSCResult, repeats=True)
+
+    def _extract_float(self, val: Any) -> Optional[float]:
+        """Local helper to safely extract a float from strings containing units."""
+        if not isinstance(val, str):
+            return float(val) if val is not None else None
+        match = re.search(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', val.replace(',', '.'))
+        if match:
+            return float(match.group())
+        return None
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if not self.data_file:
+            return
+
+        logger.info('Parsing TA Instruments DSC Measurement file', data_file=self.data_file)
+
+        try:
+            with archive.m_context.raw_file(self.data_file, 'r') as f:
+                file_path = f.name
+            dsc_data = read_ta_dsc(file_path)
+        except Exception as e:
+            logger.error('Failed to parse TA DSC data file.', exc_info=e)
+            return
+
+        # Map Metadata Fields
+        self.sample_id = dsc_data.metadata.get('Sample')
+        self.operator_id = dsc_data.metadata.get('Operator')
+        self.sample_weight = self._extract_float(dsc_data.metadata.get('Size'))
+        self.comments = dsc_data.metadata.get('Comment')
+
+        date_str = dsc_data.metadata.get('Date', '')
+        time_str = dsc_data.metadata.get('Time', '')
+        self.data_collected = f"{date_str} {time_str}".strip()
+
+        # Combine OrgMethod recipe lines into the built-in description field
+        if dsc_data.method_steps:
+            self.description = "Method Steps:\n" + "\n".join(dsc_data.method_steps)
+
+        # Map TA-Specific instrument settings
+        self.instrument = dsc_data.metadata.get('Instrument')
+        self.module = dsc_data.metadata.get('Module')
+        self.mode = dsc_data.metadata.get('Mode')
+        self.method = dsc_data.metadata.get('Method')
+        self.pan_mass = dsc_data.metadata.get('PanMass')
+        self.cell_constant = self._extract_float(dsc_data.metadata.get('Kcell'))
+        self.cooling_unit = dsc_data.metadata.get('CoolingUnit')
+
+        # Cleanly isolate the duplicate-keyed calibration paths
+        cal_paths = dsc_data.metadata.get('InstCalFile', '')
+        if 'Tzero:' in cal_paths:
+            match = re.search(r'Tzero:\s*([^|]+)', cal_paths)
+            if match:
+                self.calibration_file_tzero = match.group(1).strip()
+        if 'Baseline:' in cal_paths:
+            match = re.search(r'Baseline:\s*([^|]+)', cal_paths)
+            if match:
+                self.calibration_file_baseline = match.group(1).strip()
+        if 'Sapphire:' in cal_paths:
+            match = re.search(r'Sapphire:\s*([^|]+)', cal_paths)
+            if match:
+                self.calibration_file_sapphire = match.group(1).strip()
+
+        # Map unit-aware data arrays
+        if not self.results:
+            self.results = [TADSCResult()]
+
+        res = self.results[0]
+        res.time = dsc_data.time
+        res.sample_temperature = dsc_data.sample_temperature
+        res.heat_flow = dsc_data.heat_flow
+        res.heat_capacity = dsc_data.heat_capacity
+        res.approx_gas_flow = dsc_data.approx_gas_flow
+
+
 
 m_package.__init_metainfo__()
