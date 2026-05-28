@@ -7,6 +7,7 @@ from nomad.datamodel import EntryArchive, EntryMetadata
 # Import the data models directly from your reader package
 from readers_ientrance import DSCData, TADSCData, ThermalData
 
+# Import the newly refactored schemas
 from nomad_measurements_thermal.schema_packages.schema_package import (
     DSCMeasurement,
     TADSCMeasurement,

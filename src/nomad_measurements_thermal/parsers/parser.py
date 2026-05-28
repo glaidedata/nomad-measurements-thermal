@@ -82,7 +82,7 @@ class ThermalParser(MatchingParser):
         # Route matching signatures strictly to their corresponding schema classes
         if '[Header]' in content_peek and '[Data]' in content_peek:
             logger.info('Routing to Dilatometry schema.')
-            entry = ThermalMeasurement()
+            entry = DilatometryMeasurement()
         elif 'Method Steps:' in content_peek and 'Sample Weight:' in content_peek:
             logger.info('Routing to PerkinElmer DSC schema.')
             entry = DSCMeasurement()

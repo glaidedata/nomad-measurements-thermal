@@ -33,11 +33,52 @@ OE_TO_AM = 1000.0 / (4.0 * np.pi)  # Oersted to A/m
 
 
 # ==========================================
-# 1. THERMAL SAMPLE SECTION (Dilatometry)
+# 0. UNIVERSAL THERMAL BASE CLASS
+# ==========================================
+class ThermalMeasurementBase(Measurement, EntryData):
+    """Base class containing fields universal to ALL thermal analysis techniques."""
+
+    data_file = Quantity(
+        type=str,
+        a_eln=ELNAnnotation(component=ELNComponentEnum.FileEditQuantity),
+        a_browser=dict(adaptor='RawFileAdaptor'),
+        description='The uploaded raw data file.',
+    )
+
+    sample_id = Quantity(type=str, description='Name or identifier of the sample.')
+    operator_id = Quantity(
+        type=str, description='Name or identifier of the user operating the instrument.'
+    )
+    sample_weight = Quantity(
+        type=np.float64, unit='mg', description='Mass of the sample.'
+    )
+    data_collected = Quantity(
+        type=str, description='Date and time the actual measurement began.'
+    )
+    comments = Quantity(
+        type=str, description='Free text comments, often containing mass equations.'
+    )
+
+    validation_status = Quantity(
+        type=str, description='Whether the data was validated.'
+    )
+    validation_by = Quantity(type=str, description='User who validated the data.')
+    validation_date = Quantity(type=str, description='Date the data was validated.')
+
+    def _extract_float(self, val: Any) -> float | None:
+        """Helper to safely extract a float from a string containing text/units. Shared by all subclasses!"""
+        if not isinstance(val, str):
+            return float(val) if val is not None else None
+        match = re.search(r'[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?', val.replace(',', '.'))
+        if match:
+            return float(match.group())
+        return None
+
+
+# ==========================================
+# 1. DILATOMETRY CLASSES
 # ==========================================
 class ThermalSample(ArchiveSection):
-    """Section for storing sample metadata extracted from the BEGIN:PARAMS block."""
-
     sample_id = Quantity(
         type=str, description='Unique identifier or name for the sample.'
     )
@@ -51,9 +92,6 @@ class ThermalSample(ArchiveSection):
     sample_slot = Quantity(type=str, description='Slot where the sample is placed.')
 
 
-# ==========================================
-# 2. THERMAL RESULTS SECTION (Dilatometry)
-# ==========================================
 class ThermalResult(MeasurementResult):
     """Section for storing all the extracted arrays."""
 
@@ -240,15 +278,10 @@ class ThermalResult(MeasurementResult):
     )
 
 
-# ==========================================
-# 3. MAIN THERMAL ENTRY DATA (Dilatometry)
-# ==========================================
-class ThermalMeasurement(Measurement, EntryData):
-    """Main EntryData schema triggered by the Dilatometry parser."""
+class DilatometryMeasurement(ThermalMeasurementBase):
+    """Instantiable schema for Quantum Design Dilatometry measurements."""
 
-    m_def = Section(
-        a_eln=dict(lane_width='600px'),
-    )
+    m_def = Section(a_eln=dict(lane_width='600px'))
 
     data_file = Quantity(
         type=str,
@@ -272,10 +305,8 @@ class ThermalMeasurement(Measurement, EntryData):
     results = SubSection(section_def=ThermalResult, repeats=True)
 
     def _map_sample(self, metadata: dict) -> None:
-        """Helper method to map sample metadata."""
         if not self.sample:
             self.sample = [ThermalSample()]
-
         smp = self.sample[0]
         smp.sample_length = (
             float(metadata.get('sample_length'))
@@ -301,10 +332,8 @@ class ThermalMeasurement(Measurement, EntryData):
         smp.sample_slot = metadata.get('sample_slot')
 
     def _map_results(self, thermal_data) -> None:
-        """Helper method to map data arrays to the results section."""
         if not self.results:
             self.results = [ThermalResult()]
-
         res = self.results[0]
         res.time_stamp = (
             thermal_data.time_stamp if thermal_data.time_stamp is not None else None
@@ -450,12 +479,8 @@ class ThermalMeasurement(Measurement, EntryData):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-
         if not self.data_file:
             return
-
-        logger.info('Parsing Thermal Measurement file', data_file=self.data_file)
-
         try:
             with archive.m_context.raw_file(self.data_file, 'r') as f:
                 file_path = f.name
@@ -470,11 +495,60 @@ class ThermalMeasurement(Measurement, EntryData):
 
 
 # ==========================================
-# 4. DSC DATA SUBSECTIONS
+# 2. UNIVERSAL DSC CLASSES
+# ==========================================
+class DSCResult(MeasurementResult):
+    """Generic DSC Results shared across all DSC instrument brands."""
+
+    time = Quantity(
+        type=np.float64, shape=['*'], description='Elapsed measurement time.'
+    )
+    unsubtracted_heat_flow = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Raw heat flow before baseline subtraction.',
+    )
+    baseline_heat_flow = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Measured or interpolated baseline heat flow.',
+    )
+    program_temperature = Quantity(
+        type=np.float64, shape=['*'], description='Target program temperature.'
+    )
+    sample_temperature = Quantity(
+        type=np.float64, shape=['*'], description='Actual measured sample temperature.'
+    )
+    approx_gas_flow = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Approximate flow rate of the purge gas.',
+    )
+    heat_flow_calibration = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Dynamic heat flow calibration multiplier.',
+    )
+    uncorrected_heat_flow = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Heat flow value prior to final correction.',
+    )
+
+
+class DSCMeasurementBase(ThermalMeasurementBase):
+    """Base class for all Differential Scanning Calorimetry variants."""
+
+    results = SubSection(section_def=DSCResult, repeats=True)
+
+
+# ==========================================
+# 3. PERKIN ELMER DSC SPECIFIC CLASSES
 # ==========================================
 class DSCCalibrationInformation(ArchiveSection):
     filename = Quantity(type=str, description='Calibration configuration filename.')
-    date_time = Quantity(type=str, description='Calibration date and time.')
+    date_time = Quantity(type=str, description='Calibration Date/Time.')
+
 
 
 class DSCInitialConditions(ArchiveSection):
@@ -495,10 +569,11 @@ class DSCInitialConditions(ArchiveSection):
 
 
 class DSCManualTuneCalibration(ArchiveSection):
-    date = Quantity(type=str, description='Date of manual tune calibration.')
-    slope = Quantity(type=np.float64, description='Slope value from manual tuning.')
-    coarse_balance = Quantity(type=np.float64, description='Coarse balance setting.')
-    fine_balance = Quantity(type=np.float64, description='Fine balance setting.')
+    date = Quantity(type=str)
+    slope = Quantity(type=np.float64)
+    coarse_balance = Quantity(type=np.float64)
+    fine_balance = Quantity(type=np.float64)
+
 
 
 class DSCSmartScanCalibration(ArchiveSection):
@@ -619,8 +694,11 @@ class DSCHeatFlowCalibrationValues(ArchiveSection):
 
 
 class DSCHeatFlowCalibrationComputed(ArchiveSection):
-    date = Quantity(type=str, description='Date heat flow calibration was computed.')
-    k_ts = Quantity(type=str, description='Polynomial K(Ts) used to correct heat flow.')
+    date = Quantity(type=str)
+    k_ts = Quantity(
+        type=str, description='K(Ts) calibration polynomial (if extracted).'
+    )
+
 
 
 class DSCProfileValues(ArchiveSection):
@@ -786,7 +864,11 @@ class DSCMeasurement(Measurement, EntryData):
     )
     profile_values = SubSection(section_def=DSCProfileValues)
 
-    results = SubSection(section_def=DSCResult, repeats=True)
+    def _safe_get(self, row: list, index: int) -> str:
+        """Helper to safely retrieve an item from a list or return an empty string to avoid IndexErrors."""
+        if index < len(row):
+            return row[index]
+        return ''
 
     def _extract_float(self, val: Any) -> float | None:
         """Helper to safely extract a float from a string containing text/units."""
