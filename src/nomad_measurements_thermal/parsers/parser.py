@@ -3,9 +3,9 @@ from nomad.parsing.parser import MatchingParser
 
 # Import the specialized schemas
 from nomad_measurements_thermal.schema_packages.schema_package import (
+    DilatometryMeasurement,
     DSCMeasurement,
     TADSCMeasurement,
-    ThermalMeasurement,
 )
 
 

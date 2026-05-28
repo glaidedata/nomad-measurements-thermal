@@ -550,7 +550,6 @@ class DSCCalibrationInformation(ArchiveSection):
     date_time = Quantity(type=str, description='Calibration Date/Time.')
 
 
-
 class DSCInitialConditions(ArchiveSection):
     temperature = Quantity(
         type=np.float64, unit='°C', description='Initial start temperature.'
@@ -573,7 +572,6 @@ class DSCManualTuneCalibration(ArchiveSection):
     slope = Quantity(type=np.float64)
     coarse_balance = Quantity(type=np.float64)
     fine_balance = Quantity(type=np.float64)
-
 
 
 class DSCSmartScanCalibration(ArchiveSection):
@@ -698,7 +696,6 @@ class DSCHeatFlowCalibrationComputed(ArchiveSection):
     k_ts = Quantity(
         type=str, description='K(Ts) calibration polynomial (if extracted).'
     )
-
 
 
 class DSCProfileValues(ArchiveSection):

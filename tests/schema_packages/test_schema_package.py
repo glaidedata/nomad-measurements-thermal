@@ -9,9 +9,9 @@ from readers_ientrance import DSCData, TADSCData, ThermalData
 
 # Import the newly refactored schemas
 from nomad_measurements_thermal.schema_packages.schema_package import (
+    DilatometryMeasurement,
     DSCMeasurement,
     TADSCMeasurement,
-    ThermalMeasurement,
 )
 
 
@@ -95,7 +95,7 @@ def test_thermal_normalize(mock_read_thermal_dat, mock_thermal_data):
     mock_file.name = 'dummy_path.dat'
     archive.m_context.raw_file.return_value.__enter__.return_value = mock_file
 
-    entry = ThermalMeasurement(data_file='dummy.dat')
+    entry = DilatometryMeasurement(data_file='dummy.dat')
     entry.normalize(archive, MagicMock())
 
     assert entry.title == 'Test Mock Title'

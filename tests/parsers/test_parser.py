@@ -34,7 +34,7 @@ def test_is_mainfile():
 
 @patch(
     'nomad_measurements_thermal.schema_packages.'
-    'schema_package.ThermalMeasurement.normalize'
+    'schema_package.DilatometryMeasurement.normalize'
 )
 def test_parse_thermal(mock_normalize):
     """Verify routing to the Dilatometry schema."""
@@ -49,7 +49,7 @@ def test_parse_thermal(mock_normalize):
     parser.parse('path/to/my_test_file.dat', archive, None)
 
     assert archive.data is not None
-    assert archive.data.__class__.__name__ == 'ThermalMeasurement'
+    assert archive.data.__class__.__name__ == 'DilatometryMeasurement'
     mock_normalize.assert_called_once()
 
 
