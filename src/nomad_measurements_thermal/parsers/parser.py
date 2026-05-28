@@ -6,6 +6,7 @@ from nomad_measurements_thermal.schema_packages.schema_package import (
     DilatometryMeasurement,
     DSCMeasurement,
     TADSCMeasurement,
+    ARCMeasurement,
 )
 
 
@@ -58,6 +59,14 @@ class ThermalParser(MatchingParser):
         if has_ta_dsc_markers:
             return True
 
+        # 4. ARC Semicolon Format Check
+        has_arc_markers = (
+            'Test Cell Type;' in text and
+            'Serial Number;Current Time;Sample Temperature' in text
+            )
+        if has_arc_markers:
+            return True
+
         return False
 
     def parse(
@@ -89,6 +98,9 @@ class ThermalParser(MatchingParser):
         elif 'CLOSED' in content_peek and 'Instrument' in content_peek:
             logger.info('Routing to TA Instruments DSC schema.')
             entry = TADSCMeasurement()
+        elif 'Test Cell Type;' in content_peek and 'Sample Temperature' in content_peek:
+            logger.info('Routing to ARC schema.')
+            entry = ARCMeasurement()
         else:
             logger.error(f'Unrecognized thermal file format: {filename}')
             return
