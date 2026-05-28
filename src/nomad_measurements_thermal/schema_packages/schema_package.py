@@ -908,122 +908,175 @@ class DSCMeasurement(Measurement, EntryData):
         pv.load_temperature = self._extract_float(
             dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Load Temperature')
         )
+        pv.go_to_temp_rate = self._extract_float(
+            dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Go To Temp Rate')
+        )
         pv.maximum_allowed_temperature = self._extract_float(
             dsc_data.metadata.get(
                 'PROFILE VALUES FOR THIS DATA_Maximum Allowed Temperature'
             )
         )
+        pv.helium_purge = dsc_data.metadata.get(
+            'PROFILE VALUES FOR THIS DATA_Helium Purge'
+        )
+        pv.liquid_nitrogen = dsc_data.metadata.get(
+            'PROFILE VALUES FOR THIS DATA_Liquid Nitrogen'
+        )
+        pv.data_taken_using_the = dsc_data.metadata.get(
+            'PROFILE VALUES FOR THIS DATA_Data taken using the'
+        )
+        pv.filter_factor = self._extract_float(
+            dsc_data.metadata.get('PROFILE VALUES FOR THIS DATA_Filter Factor')
+        )
+        pv.cooling_device = dsc_data.metadata.get(
+            'PROFILE VALUES FOR THIS DATA_Cooling Device'
+        )
+        pv.wavelet_denoising_used = dsc_data.metadata.get(
+            'PROFILE VALUES FOR THIS DATA_Wavelet Denoising used'
+        )
+        pv.autoslope_used = dsc_data.metadata.get(
+            'PROFILE VALUES FOR THIS DATA_Autoslope Used'
+        )
         self.profile_values = pv
 
     def _map_calibrations(self, dsc_data) -> None:
         """Extracts standard single-line calibration blocks."""
+
+        # 1. Calibration Information
         cal_info = DSCCalibrationInformation()
         cal_info.filename = dsc_data.metadata.get('Calibration Information_Filename')
         cal_info.date_time = dsc_data.metadata.get('Calibration Information_Date/Time')
         self.calibration_information = cal_info
 
-        init_cond = DSCInitialConditions()
-        init_cond.temperature = self._extract_float(
+        # 2. Initial Conditions
+        ic = DSCInitialConditions()
+        ic.temperature = self._extract_float(
             dsc_data.metadata.get('Initial Conditions_Temperature')
         )
-        self.initial_conditions = init_cond
+        ic.purge_gas = dsc_data.metadata.get('Initial Conditions_Purge Gas')
+        ic.purge_gas_rate = dsc_data.metadata.get('Initial Conditions_Purge Gas Rate')
+        ic.baseline_filename = dsc_data.metadata.get(
+            'Initial Conditions_Baseline Filename'
+        )
+        ic.end_condition = dsc_data.metadata.get('Initial Conditions_End Condition')
+        ic.total_points_in_run = self._extract_float(
+            dsc_data.metadata.get('Initial Conditions_Total Points in Run')
+        )
+        self.initial_conditions = ic
 
-        mt_cal = DSCManualTuneCalibration()
-        mt_cal.date = dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Date')
-        mt_cal.slope = self._extract_float(
+        # 3. Manual Tune Calibration
+        mt = DSCManualTuneCalibration()
+        mt.date = dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Date')
+        mt.slope = self._extract_float(
             dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Slope')
         )
-        self.manual_tune_calibration = mt_cal
+        mt.coarse_balance = self._extract_float(
+            dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Coarse Balance')
+        )
+        mt.fine_balance = self._extract_float(
+            dsc_data.metadata.get('MANUAL TUNE CALIBRATION VALUES_Fine Balance')
+        )
+        self.manual_tune_calibration = mt
+
+        # 4. SmartScan Calibration
+        sc = DSCSmartScanCalibration()
+        sc.date = dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Date')
+        sc.smartscan_enabled = dsc_data.metadata.get(
+            'SMARTSCAN CALIBRATION VALUES_SmartScan Enabled'
+        )
+        sc.calibration_file = dsc_data.metadata.get(
+            'SMARTSCAN CALIBRATION VALUES_Calibration File'
+        )
+        sc.starting_temperature = self._extract_float(
+            dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Starting Temperature')
+        )
+        sc.ending_temperature = self._extract_float(
+            dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Ending Temperature')
+        )
+        sc.number_of_steps = self._extract_float(
+            dsc_data.metadata.get('SMARTSCAN CALIBRATION VALUES_Number of Steps')
+        )
+        self.smartscan_calibration = sc
+
+        # 5. Furnace Temperature Calibration
+        ft = DSCFurnaceTemperatureCalibration()
+        ft.minimum = self._extract_float(
+            dsc_data.metadata.get('FURNACE TEMPERATURE CALIBRATION VALUES_Minimum')
+        )
+        ft.maximum = self._extract_float(
+            dsc_data.metadata.get('FURNACE TEMPERATURE CALIBRATION VALUES_Maximum')
+        )
+        self.furnace_temperature_calibration = ft
+
+        # 6. Heat Flow Calibration Computed
+        hf_comp = DSCHeatFlowCalibrationComputed()
+        hf_comp.date = dsc_data.metadata.get(
+            'HEAT FLOW CALIBRATION COMPUTED RESULTS_Date'
+        )
+        hf_comp.k_ts = dsc_data.metadata.get(
+            'HEAT FLOW CALIBRATION COMPUTED RESULTS_K(Ts)'
+        )
+        self.heat_flow_calibration_computed = hf_comp
 
     def _map_tables(self, dsc_data) -> None:
         """Extracts table-based calibrations using declared index constants to avoid magic numbers."""
         # 1. Sample Temperature Calibration
-        if 'SAMPLE TEMPERATURE CALIBRATION VALUES' in dsc_data.tables:
-            st_cal = DSCSampleTemperatureCalibration()
+        st_cal = DSCSampleTemperatureCalibration()
+        st_cal.date = dsc_data.metadata.get(
+            'SAMPLE TEMPERATURE CALIBRATION VALUES_Date'
+        )
+        st_table = dsc_data.tables.get('SAMPLE TEMPERATURE CALIBRATION VALUES', [])
+        if len(st_table) > 1:
             refs, exps, meas, wgts, scans = [], [], [], [], []
-
-            # Using defined constants to satisfy Ruff PLR2004
-            idx_ref, idx_exp, idx_meas, idx_wgt, idx_scan = 0, 1, 2, 3, 4
-
-            for row in dsc_data.tables['SAMPLE TEMPERATURE CALIBRATION VALUES'][1:]:
-                refs.append(row[idx_ref] if len(row) > idx_ref else '')
-                exps.append(
-                    self._extract_float(row[idx_exp]) if len(row) > idx_exp else None
-                )
-                meas.append(
-                    self._extract_float(row[idx_meas]) if len(row) > idx_meas else None
-                )
-                wgts.append(
-                    self._extract_float(row[idx_wgt]) if len(row) > idx_wgt else None
-                )
-                scans.append(
-                    self._extract_float(row[idx_scan]) if len(row) > idx_scan else None
-                )
-
+            for row in st_table[1:]:
+                refs.append(self._safe_get(row, 0))
+                exps.append(self._extract_float(self._safe_get(row, 1)))
+                meas.append(self._extract_float(self._safe_get(row, 2)))
+                wgts.append(self._extract_float(self._safe_get(row, 3)))
+                scans.append(self._extract_float(self._safe_get(row, 4)))
             st_cal.reference = refs
             st_cal.expected_temperature = exps
             st_cal.measured_temperature = meas
             st_cal.weight = wgts
             st_cal.scan_rate = scans
-            self.sample_temperature_calibration = st_cal
+        self.sample_temperature_calibration = st_cal
 
         # 2. Furnace Calibration Computed
-        if 'FURNACE CALIBRATION COMPUTED' in dsc_data.tables:
-            fc_comp = DSCFurnaceCalibrationComputed()
+        fc_comp = DSCFurnaceCalibrationComputed()
+        fc_comp.date = dsc_data.metadata.get(
+            'FURNACE CALIBRATION COMPUTED RESULTS_Date'
+        )
+        fc_table = dsc_data.tables.get('FURNACE CALIBRATION COMPUTED RESULTS', [])
+        if len(fc_table) > 1:
             sets, bounds, ys = [], [], []
-
-            # Using defined constants to satisfy Ruff PLR2004
-            idx_set, idx_bound, idx_y = 0, 1, 2
-
-            for row in dsc_data.tables['FURNACE CALIBRATION COMPUTED'][1:]:
-                sets.append(
-                    self._extract_float(row[idx_set]) if len(row) > idx_set else None
-                )
-                bounds.append(
-                    self._extract_float(row[idx_bound])
-                    if len(row) > idx_bound
-                    else None
-                )
-                ys.append(self._extract_float(row[idx_y]) if len(row) > idx_y else None)
-
+            for row in fc_table[1:]:
+                sets.append(self._extract_float(self._safe_get(row, 0)))
+                bounds.append(self._extract_float(self._safe_get(row, 1)))
+                ys.append(self._extract_float(self._safe_get(row, 2)))
             fc_comp.setpoints = sets
             fc_comp.boundaries = bounds
             fc_comp.y_double_prime = ys
-            self.furnace_calibration_computed = fc_comp
+        self.furnace_calibration_computed = fc_comp
 
         # 3. Heat Flow Calibration Values
-        if 'HEAT FLOW CALIBRATION VALUES' in dsc_data.tables:
-            hf_val = DSCHeatFlowCalibrationValues()
+        hf_val = DSCHeatFlowCalibrationValues()
+        hf_table = dsc_data.tables.get('HEAT FLOW CALIBRATION VALUES', [])
+        if len(hf_table) > 1:
             refs, temps, exps, meas, wgts, scans = [], [], [], [], [], []
-
-            # Using defined constants to satisfy Ruff PLR2004
-            idx_ref, idx_temp, idx_exp, idx_meas, idx_wgt, idx_scan = 0, 1, 2, 3, 4, 5
-
-            for row in dsc_data.tables['HEAT FLOW CALIBRATION VALUES'][1:]:
-                refs.append(row[idx_ref] if len(row) > idx_ref else '')
-                temps.append(
-                    self._extract_float(row[idx_temp]) if len(row) > idx_temp else None
-                )
-                exps.append(
-                    self._extract_float(row[idx_exp]) if len(row) > idx_exp else None
-                )
-                meas.append(
-                    self._extract_float(row[idx_meas]) if len(row) > idx_meas else None
-                )
-                wgts.append(
-                    self._extract_float(row[idx_wgt]) if len(row) > idx_wgt else None
-                )
-                scans.append(
-                    self._extract_float(row[idx_scan]) if len(row) > idx_scan else None
-                )
-
+            for row in hf_table[1:]:
+                refs.append(self._safe_get(row, 0))
+                temps.append(self._extract_float(self._safe_get(row, 1)))
+                exps.append(self._extract_float(self._safe_get(row, 2)))
+                meas.append(self._extract_float(self._safe_get(row, 3)))
+                wgts.append(self._extract_float(self._safe_get(row, 4)))
+                scans.append(self._extract_float(self._safe_get(row, 5)))
             hf_val.reference = refs
             hf_val.temperature = temps
             hf_val.expected = exps
             hf_val.measured = meas
             hf_val.weight = wgts
             hf_val.scan_rate = scans
-            self.heat_flow_calibration_values = hf_val
+        self.heat_flow_calibration_values = hf_val
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
