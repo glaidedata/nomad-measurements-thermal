@@ -1261,32 +1261,38 @@ class ARCInstrumentSettings(ArchiveSection):
     sample_heat_capacity = Quantity(type=np.float64, description='Heat capacity of the sample.')
     sample_density = Quantity(type=np.float64, description='Density of the sample.')
     molar_mass = Quantity(type=np.float64, description='Molar mass of the sample.')
+    quality_score = Quantity(type=str, description='Quality score of the test data.')
 
 class ARCInitialConditions(ArchiveSection):
     mode_selection = Quantity(type=str, description='Operating mode selection.')
-    start_temperature = Quantity(type=np.float64, unit='°C', description='Start temperature.')
-    target_temperature = Quantity(type=np.float64, unit='°C', description='Target temperature.')
-    end_temperature = Quantity(type=np.float64, unit='°C', description='End temperature.')
-    soak_time = Quantity(type=np.float64, unit='min', description='Soak time.')
-    wait_time = Quantity(type=np.float64, unit='min', description='Wait time.')
-    search_time = Quantity(type=np.float64, unit='min', description='Search time.')
-    temperature_step = Quantity(type=np.float64, unit='°C', description='Temperature step size.')
+    start_temperature = Quantity(type=np.float64, description='Start temperature.')
+    target_temperature = Quantity(type=np.float64, description='Target temperature.')
+    end_temperature = Quantity(type=np.float64, description='End temperature.')
+    soak_time = Quantity(type=np.float64, description='Soak time.')
+    wait_time = Quantity(type=np.float64, description='Wait time.')
+    search_time = Quantity(type=np.float64, description='Search time.')
+    temperature_step = Quantity(type=np.float64, description='Temperature step size.')
     step_number = Quantity(type=np.float64, description='Number of steps.')
-    step_rate = Quantity(type=np.float64, unit='°C/min', description='Step rate.')
-    step_soak_time = Quantity(type=np.float64, unit='min', description='Step soak time.')
-    temp_rate_sensitivity = Quantity(type=np.float64, unit='°C/min', description='Temperature rate sensitivity.')
+    step_rate = Quantity(type=np.float64, description='Step rate.')
+    step_soak_time = Quantity(type=np.float64, description='Step soak time.')
+    temp_rate_sensitivity = Quantity(type=np.float64, description='Temperature rate sensitivity.')
+    uniform_rate = Quantity(type=np.float64, description='Uniform heating rate.')
+    starting_interval_soak_time = Quantity(type=np.float64, description='Starting interval soak time.')
+    end_reaction_soak_time = Quantity(type=np.float64, description='End reaction soak time.')
+    starting_interval_rate = Quantity(type=np.float64, description='Starting interval rate.')
+    second_reaction_temperature_step = Quantity(type=np.float64, description='Second reaction temperature step.')
 
 class ARCResult(MeasurementResult):
     serial_number = Quantity(type=np.float64, shape=['*'], description='Data point index.')
     current_time = Quantity(type=str, shape=['*'], description='Timestamp of measurement.')
-    sample_temperature = Quantity(type=np.float64, shape=['*'], unit='°C', description='Sample temperature.')
-    top_temperature = Quantity(type=np.float64, shape=['*'], unit='°C', description='Top temperature.')
-    wall_temperature = Quantity(type=np.float64, shape=['*'], unit='°C', description='Wall temperature.')
-    bottom_temperature = Quantity(type=np.float64, shape=['*'], unit='°C', description='Bottom temperature.')
-    jacket_temperature = Quantity(type=np.float64, shape=['*'], unit='°C', description='Jacket temperature.')
+    sample_temperature = Quantity(type=np.float64, shape=['*'], description='Sample temperature.')
+    top_temperature = Quantity(type=np.float64, shape=['*'], description='Top temperature.')
+    wall_temperature = Quantity(type=np.float64, shape=['*'], description='Wall temperature.')
+    bottom_temperature = Quantity(type=np.float64, shape=['*'], description='Bottom temperature.')
+    jacket_temperature = Quantity(type=np.float64, shape=['*'], description='Jacket temperature.')
     pressure = Quantity(type=np.float64, shape=['*'], description='Measured pressure.')
-    power1 = Quantity(type=np.float64, shape=['*'], unit='W', description='Power 1.')
-    power2 = Quantity(type=np.float64, shape=['*'], unit='W', description='Power 2.')
+    power1 = Quantity(type=np.float64, shape=['*'], description='Power 1.')
+    power2 = Quantity(type=np.float64, shape=['*'], description='Power 2.')
 
 class ARCMeasurement(ThermalMeasurementBase):
     """Schema for Semicolon-Separated Accelerating Rate Calorimetry (ARC) data."""
@@ -1313,7 +1319,7 @@ class ARCMeasurement(ThermalMeasurementBase):
         self.sample_id = arc_data.metadata.get('Sample Name')
         weight_val = self._extract_float(arc_data.metadata.get('Sample Mass'))
         if weight_val is not None:
-            self.sample_weight = weight_val * 1000  # Convert from g to mg
+            self.sample_weight = weight_val * 1000  # Convert from g to mg assuming the original is in grams
 
         self.data_collected = arc_data.metadata.get('Current Time')
 
@@ -1325,6 +1331,7 @@ class ARCMeasurement(ThermalMeasurementBase):
         inst.sample_heat_capacity = self._extract_float(arc_data.metadata.get('Sample Heat Capacity'))
         inst.sample_density = self._extract_float(arc_data.metadata.get('Sample Density'))
         inst.molar_mass = self._extract_float(arc_data.metadata.get('Molar Mass'))
+        inst.quality_score = arc_data.metadata.get('Quality Score')
         self.instrument_settings = inst
 
         # Map Initial Conditions
@@ -1341,6 +1348,11 @@ class ARCMeasurement(ThermalMeasurementBase):
         init.step_rate = self._extract_float(arc_data.metadata.get('Step Rate'))
         init.step_soak_time = self._extract_float(arc_data.metadata.get('Step Soak Time'))
         init.temp_rate_sensitivity = self._extract_float(arc_data.metadata.get('Temp Rate Sensitivity'))
+        init.uniform_rate = self._extract_float(arc_data.metadata.get('Uniform Rate'))
+        init.starting_interval_soak_time = self._extract_float(arc_data.metadata.get('Starting Interval Soak Time'))
+        init.end_reaction_soak_time = self._extract_float(arc_data.metadata.get('End Reaction Soak Time'))
+        init.starting_interval_rate = self._extract_float(arc_data.metadata.get('Starting Interval Rate'))
+        init.second_reaction_temperature_step = self._extract_float(arc_data.metadata.get('Second Reaction Temperature Step'))
         self.initial_conditions = init
 
         # Map Results Array
@@ -1348,7 +1360,7 @@ class ARCMeasurement(ThermalMeasurementBase):
             self.results = [ARCResult()]
         res = self.results[0]
         res.serial_number = arc_data.serial_number
-        res.current_time = arc_data.current_time
+        res.current_time = arc_data.current_time.tolist() if arc_data.current_time is not None else None
         res.sample_temperature = arc_data.sample_temperature
         res.top_temperature = arc_data.top_temperature
         res.wall_temperature = arc_data.wall_temperature
