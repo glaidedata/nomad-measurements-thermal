@@ -3,9 +3,9 @@ from nomad.parsing.parser import MatchingParser
 
 # Import the specialized schemas
 from nomad_measurements_thermal.schema_packages.schema_package import (
-    ThermalMeasurement,
     DSCMeasurement,
     TADSCMeasurement,
+    ThermalMeasurement,
 )
 
 
@@ -22,11 +22,11 @@ class ThermalParser(MatchingParser):
         if not super().is_mainfile(filename, mime, buffer, decoded_buffer, compression):
             return False
 
-        text = decoded_buffer if decoded_buffer else ""
+        text = decoded_buffer if decoded_buffer else ''
         if not text and buffer:
-            text = buffer.decode("utf-8", errors="ignore")
-            if "\x00" in text:
-                text = buffer.decode("utf-16", errors="ignore")
+            text = buffer.decode('utf-8', errors='ignore')
+            if '\x00' in text:
+                text = buffer.decode('utf-16', errors='ignore')
 
         if not text:
             return False
@@ -48,18 +48,13 @@ class ThermalParser(MatchingParser):
 
         # 2. PerkinElmer DSC Check
         has_dsc_markers = (
-            'Sample Weight:' in text and
-            'Method Steps:' in text and
-            'Heat Flow' in text
+            'Sample Weight:' in text and 'Method Steps:' in text and 'Heat Flow' in text
         )
         if has_dsc_markers:
             return True
 
         # 3. TA Instruments DSC Check
-        has_ta_dsc_markers = (
-            'CLOSED' in text and
-            'Instrument' in text
-        )
+        has_ta_dsc_markers = 'CLOSED' in text and 'Instrument' in text
         if has_ta_dsc_markers:
             return True
 
