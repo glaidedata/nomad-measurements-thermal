@@ -14,7 +14,8 @@ from nomad.datamodel.metainfo.basesections import Measurement, MeasurementResult
 from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection
 
 # Import the reader package for DSC
-from readers_ientrance import read_perkinelmer_dsc
+# Import the reader package for ARC
+from readers_ientrance import read_arc, read_perkinelmer_dsc
 
 # Import the reader package for TA Instruments DSC
 from readers_ientrance.ta_dsc_reader import read_ta_dsc
@@ -1246,6 +1247,199 @@ class TADSCMeasurement(Measurement, EntryData):
         res.heat_flow = dsc_data.heat_flow
         res.heat_capacity = dsc_data.heat_capacity
         res.approx_gas_flow = dsc_data.approx_gas_flow
+
+
+# ==========================================
+# 7. ACCELERATING RATE CALORIMETRY (ARC)
+# ==========================================
+class ARCInstrumentSettings(ArchiveSection):
+    test_cell_type = Quantity(type=str, description='Type of the test cell.')
+    test_cell_mass = Quantity(type=np.float64, description='Mass of the test cell.')
+    test_cell_heat_capacity = Quantity(
+        type=np.float64, description='Heat capacity of the test cell.'
+    )
+    sample_heat_capacity = Quantity(
+        type=np.float64, description='Heat capacity of the sample.'
+    )
+    sample_density = Quantity(type=np.float64, description='Density of the sample.')
+    molar_mass = Quantity(type=np.float64, description='Molar mass of the sample.')
+    quality_score = Quantity(type=str, description='Quality score of the test data.')
+
+
+class ARCInitialConditions(ArchiveSection):
+    mode_selection = Quantity(type=str, description='Operating mode selection.')
+    start_temperature = Quantity(type=np.float64, description='Start temperature.')
+    target_temperature = Quantity(type=np.float64, description='Target temperature.')
+    end_temperature = Quantity(type=np.float64, description='End temperature.')
+    soak_time = Quantity(type=np.float64, description='Soak time.')
+    wait_time = Quantity(type=np.float64, description='Wait time.')
+    search_time = Quantity(type=np.float64, description='Search time.')
+    temperature_step = Quantity(type=np.float64, description='Temperature step size.')
+    step_number = Quantity(type=np.float64, description='Number of steps.')
+    step_rate = Quantity(type=np.float64, description='Step rate.')
+    step_soak_time = Quantity(type=np.float64, description='Step soak time.')
+    temp_rate_sensitivity = Quantity(
+        type=np.float64, description='Temperature rate sensitivity.'
+    )
+    uniform_rate = Quantity(type=np.float64, description='Uniform heating rate.')
+    starting_interval_soak_time = Quantity(
+        type=np.float64, description='Starting interval soak time.'
+    )
+    end_reaction_soak_time = Quantity(
+        type=np.float64, description='End reaction soak time.'
+    )
+    starting_interval_rate = Quantity(
+        type=np.float64, description='Starting interval rate.'
+    )
+    second_reaction_temperature_step = Quantity(
+        type=np.float64, description='Second reaction temperature step.'
+    )
+
+
+class ARCResult(MeasurementResult):
+    serial_number = Quantity(
+        type=np.float64, shape=['*'], description='Data point index.'
+    )
+    current_time = Quantity(
+        type=str, shape=['*'], description='Timestamp of measurement.'
+    )
+    sample_temperature = Quantity(
+        type=np.float64, shape=['*'], description='Sample temperature.'
+    )
+    top_temperature = Quantity(
+        type=np.float64, shape=['*'], description='Top temperature.'
+    )
+    wall_temperature = Quantity(
+        type=np.float64, shape=['*'], description='Wall temperature.'
+    )
+    bottom_temperature = Quantity(
+        type=np.float64, shape=['*'], description='Bottom temperature.'
+    )
+    jacket_temperature = Quantity(
+        type=np.float64, shape=['*'], description='Jacket temperature.'
+    )
+    pressure = Quantity(type=np.float64, shape=['*'], description='Measured pressure.')
+    power1 = Quantity(type=np.float64, shape=['*'], description='Power 1.')
+    power2 = Quantity(type=np.float64, shape=['*'], description='Power 2.')
+
+
+class ARCMeasurement(ThermalMeasurementBase):
+    """Schema for Semicolon-Separated Accelerating Rate Calorimetry (ARC) data."""
+
+    m_def = Section(a_eln=dict(lane_width='600px'))
+
+    instrument_settings = SubSection(section_def=ARCInstrumentSettings)
+    initial_conditions = SubSection(section_def=ARCInitialConditions)
+    results = SubSection(section_def=ARCResult, repeats=True)
+
+    def _map_metadata(self, arc_data) -> None:
+        """Helper to map top-level base metadata."""
+        self.sample_id = arc_data.metadata.get('Sample Name')
+        weight_val = self._extract_float(arc_data.metadata.get('Sample Mass'))
+        if weight_val is not None:
+            self.sample_weight = weight_val * 1000  # Convert g to mg
+
+        self.data_collected = arc_data.metadata.get('Current Time')
+
+    def _map_instrument_settings(self, arc_data) -> None:
+        """Helper to map the ARC specific instrument settings."""
+        inst = ARCInstrumentSettings()
+        inst.test_cell_type = arc_data.metadata.get('Test Cell Type')
+        inst.test_cell_mass = self._extract_float(
+            arc_data.metadata.get('Test Cell Mass')
+        )
+        inst.test_cell_heat_capacity = self._extract_float(
+            arc_data.metadata.get('Test Cell Heat Capacity')
+        )
+        inst.sample_heat_capacity = self._extract_float(
+            arc_data.metadata.get('Sample Heat Capacity')
+        )
+        inst.sample_density = self._extract_float(
+            arc_data.metadata.get('Sample Density')
+        )
+        inst.molar_mass = self._extract_float(arc_data.metadata.get('Molar Mass'))
+        inst.quality_score = arc_data.metadata.get('Quality Score')
+        self.instrument_settings = inst
+
+    def _map_initial_conditions(self, arc_data) -> None:
+        """Helper to map initial operating conditions."""
+        init = ARCInitialConditions()
+        init.mode_selection = arc_data.metadata.get('Mode Selection')
+        init.start_temperature = self._extract_float(
+            arc_data.metadata.get('Start Temperature')
+        )
+        init.target_temperature = self._extract_float(
+            arc_data.metadata.get('Target Temperature')
+        )
+        init.end_temperature = self._extract_float(
+            arc_data.metadata.get('End Temperature')
+        )
+        init.soak_time = self._extract_float(arc_data.metadata.get('Soak Time'))
+        init.wait_time = self._extract_float(arc_data.metadata.get('Wait Time'))
+        init.search_time = self._extract_float(arc_data.metadata.get('Search Time'))
+        init.temperature_step = self._extract_float(
+            arc_data.metadata.get('Temperature Step')
+        )
+        init.step_number = self._extract_float(arc_data.metadata.get('Step Number'))
+        init.step_rate = self._extract_float(arc_data.metadata.get('Step Rate'))
+        init.step_soak_time = self._extract_float(
+            arc_data.metadata.get('Step Soak Time')
+        )
+        init.temp_rate_sensitivity = self._extract_float(
+            arc_data.metadata.get('Temp Rate Sensitivity')
+        )
+        init.uniform_rate = self._extract_float(arc_data.metadata.get('Uniform Rate'))
+        init.starting_interval_soak_time = self._extract_float(
+            arc_data.metadata.get('Starting Interval Soak Time')
+        )
+        init.end_reaction_soak_time = self._extract_float(
+            arc_data.metadata.get('End Reaction Soak Time')
+        )
+        init.starting_interval_rate = self._extract_float(
+            arc_data.metadata.get('Starting Interval Rate')
+        )
+        init.second_reaction_temperature_step = self._extract_float(
+            arc_data.metadata.get('Second Reaction Temperature Step')
+        )
+        self.initial_conditions = init
+
+    def _map_results(self, arc_data) -> None:
+        """Helper to map the primary data arrays."""
+        if not self.results:
+            self.results = [ARCResult()]
+        res = self.results[0]
+        res.serial_number = arc_data.serial_number
+        res.current_time = (
+            arc_data.current_time.tolist()
+            if arc_data.current_time is not None
+            else None
+        )
+        res.sample_temperature = arc_data.sample_temperature
+        res.top_temperature = arc_data.top_temperature
+        res.wall_temperature = arc_data.wall_temperature
+        res.bottom_temperature = arc_data.bottom_temperature
+        res.jacket_temperature = arc_data.jacket_temperature
+        res.pressure = arc_data.pressure
+        res.power1 = arc_data.power1
+        res.power2 = arc_data.power2
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        if not self.data_file:
+            return
+
+        try:
+            with archive.m_context.raw_file(self.data_file, 'r') as f:
+                file_path = f.name
+            arc_data = read_arc(file_path)
+        except Exception as e:
+            logger.error('Failed to parse ARC data file.', exc_info=e)
+            return
+
+        self._map_metadata(arc_data)
+        self._map_instrument_settings(arc_data)
+        self._map_initial_conditions(arc_data)
+        self._map_results(arc_data)
 
 
 m_package.__init_metainfo__()

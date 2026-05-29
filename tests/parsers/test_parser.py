@@ -6,7 +6,7 @@ from nomad_measurements_thermal.parsers.parser import ThermalParser
 
 
 def test_is_mainfile():
-    """Test the parser's gatekeeper logic for all three file formats."""
+    """Test the parser's gatekeeper logic for all four file formats."""
     parser = ThermalParser()
 
     # 1. Valid Dilatometry file structure
@@ -21,14 +21,20 @@ def test_is_mainfile():
         'test_file.txt', 'text/plain', valid_dsc.encode(), valid_dsc
     )
 
-    # 3. Valid TA Instruments DSC file (Testing raw UTF-16 byte fallback)
+    # 3. Valid TA Instruments DSC file
     valid_ta = 'CLOSED\nLanguage\nInstrument Q2000\nDSC\nStartOfData\nOrgMethod\n'
     assert parser.is_mainfile('test_ta.txt', 'text/plain', valid_ta.encode(), valid_ta)
 
-    # 4. Invalid file structure
+    # 4. Valid ARC file structure
+    valid_arc = 'Test Cell Type;SS316L\nSerial Number;Current Time;Sample Temperature\n'
+    assert parser.is_mainfile(
+        'test_arc.txt', 'text/plain', valid_arc.encode(), valid_arc
+    )
+
+    # 5. Invalid file structure
     invalid_content = 'Just some random text without the proper headers.'
     assert not parser.is_mainfile(
-        'test_file.dat', 'text/plain', invalid_content.encode(), invalid_content
+        'test_invalid.dat', 'text/plain', invalid_content.encode(), invalid_content
     )
 
 
@@ -91,4 +97,24 @@ def test_parse_ta_dsc(mock_normalize):
 
     assert archive.data is not None
     assert archive.data.__class__.__name__ == 'TADSCMeasurement'
+    mock_normalize.assert_called_once()
+
+
+@patch(
+    'nomad_measurements_thermal.schema_packages.schema_package.ARCMeasurement.normalize'
+)
+def test_parse_arc(mock_normalize):
+    """Verify routing to the ARC schema."""
+    parser = ThermalParser()
+    archive = EntryArchive()
+    archive.m_context = MagicMock()
+
+    mock_file = MagicMock()
+    mock_file.read.return_value = b'Test Cell Type;\nSample Temperature\n'
+    archive.m_context.raw_file.return_value.__enter__.return_value = mock_file
+
+    parser.parse('path/to/arc_test_file.txt', archive, None)
+
+    assert archive.data is not None
+    assert archive.data.__class__.__name__ == 'ARCMeasurement'
     mock_normalize.assert_called_once()
