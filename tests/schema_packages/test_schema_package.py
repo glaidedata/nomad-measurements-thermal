@@ -4,11 +4,11 @@ import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive, EntryMetadata
 
-# Import the data models directly from your reader package
 from readers_ientrance import DSCData, TADSCData, ThermalData
 
 # Import the newly refactored schemas
 from nomad_measurements_thermal.schema_packages.schema_package import (
+    ARCMeasurement,
     DilatometryMeasurement,
     DSCMeasurement,
     TADSCMeasurement,
@@ -80,6 +80,32 @@ def mock_ta_dsc_data():
         heat_capacity=np.array([200.0, 210.0]),
         approx_gas_flow=np.array([50.0, 50.0]),
     )
+
+
+@pytest.fixture
+def mock_arc_data():
+    """Mock output simulating ARC reader."""
+    mock_data = MagicMock()
+    mock_data.metadata = {
+        'Sample Name': 'Al2O3',
+        'Sample Mass': '9.9',
+        'Test Cell Mass': '25.0',
+        'Start Temperature': '50.0',
+        'Current Time': '2026-01-23 16:24:38',
+    }
+
+    mock_data.serial_number = np.array([0.0, 1.0])
+    mock_data.current_time = np.array(["16:24:39", "16:24:40"])
+    mock_data.sample_temperature = np.array([32.95, 33.0])
+    mock_data.top_temperature = np.array([47.6, 47.61])
+    mock_data.wall_temperature = np.array([50.1, 50.11])
+    mock_data.bottom_temperature = np.array([50.37, 50.37])
+    mock_data.jacket_temperature = np.array([0.0, 0.0])
+    mock_data.pressure = np.array([0.1, 0.1])
+    mock_data.power1 = np.array([0.0, 0.0])
+    mock_data.power2 = np.array([0.0, 0.0])
+
+    return mock_data
 
 
 @patch('nomad_measurements_thermal.schema_packages.schema_package.read_thermal_dat')
@@ -154,3 +180,40 @@ def test_ta_dsc_normalize(mock_read_ta_dsc, mock_ta_dsc_data):
 
     # Check results mappings
     assert np.array_equal(entry.results[0].heat_capacity.magnitude, [200.0, 210.0])
+
+
+@patch('nomad_measurements_thermal.schema_packages.schema_package.read_arc')
+def test_arc_normalize(mock_read_arc, mock_arc_data):
+    """Verify ARC normalization."""
+    mock_read_arc.return_value = mock_arc_data
+
+    archive = EntryArchive()
+    archive.m_context = MagicMock()
+    archive.metadata = EntryMetadata(entry_name='dummy')
+
+    mock_file = MagicMock()
+    mock_file.name = 'dummy_path_arc.txt'
+    archive.m_context.raw_file.return_value.__enter__.return_value = mock_file
+
+    entry = ARCMeasurement(data_file='dummy_arc.txt')
+    entry.normalize(archive, MagicMock())
+
+    # Check base mappings & unit conversion (g to mg)
+    assert entry.sample_id == 'Al2O3'
+    assert entry.sample_weight.magnitude == 9900.0  # noqa: PLR2004
+    assert entry.data_collected == '2026-01-23 16:24:38'
+
+    cell_mass = entry.instrument_settings.test_cell_mass
+    start_temp = entry.initial_conditions.start_temperature
+
+    assert (cell_mass.magnitude if hasattr(cell_mass, 'magnitude') else cell_mass) == 25.0  # noqa: PLR2004
+    assert (start_temp.magnitude if hasattr(start_temp, 'magnitude') else start_temp) == 50.0  # noqa: PLR2004
+
+    # Check array mapping and the specific .tolist() fix for string arrays
+    assert entry.results[0].current_time == ["16:24:39", "16:24:40"]
+
+    sample_temp = entry.results[0].sample_temperature
+    assert np.array_equal(
+        (sample_temp.magnitude if hasattr(sample_temp, 'magnitude') else sample_temp),
+        [32.95, 33.0]
+    )
