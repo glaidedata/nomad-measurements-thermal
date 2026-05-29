@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive, EntryMetadata
-
 from readers_ientrance import DSCData, TADSCData, ThermalData
 
 # Import the newly refactored schemas
@@ -95,7 +94,7 @@ def mock_arc_data():
     }
 
     mock_data.serial_number = np.array([0.0, 1.0])
-    mock_data.current_time = np.array(["16:24:39", "16:24:40"])
+    mock_data.current_time = np.array(['16:24:39', '16:24:40'])
     mock_data.sample_temperature = np.array([32.95, 33.0])
     mock_data.top_temperature = np.array([47.6, 47.61])
     mock_data.wall_temperature = np.array([50.1, 50.11])
@@ -206,14 +205,18 @@ def test_arc_normalize(mock_read_arc, mock_arc_data):
     cell_mass = entry.instrument_settings.test_cell_mass
     start_temp = entry.initial_conditions.start_temperature
 
-    assert (cell_mass.magnitude if hasattr(cell_mass, 'magnitude') else cell_mass) == 25.0  # noqa: PLR2004
-    assert (start_temp.magnitude if hasattr(start_temp, 'magnitude') else start_temp) == 50.0  # noqa: PLR2004
+    assert (
+        cell_mass.magnitude if hasattr(cell_mass, 'magnitude') else cell_mass
+    ) == 25.0  # noqa: PLR2004
+    assert (
+        start_temp.magnitude if hasattr(start_temp, 'magnitude') else start_temp
+    ) == 50.0  # noqa: PLR2004
 
     # Check array mapping and the specific .tolist() fix for string arrays
-    assert entry.results[0].current_time == ["16:24:39", "16:24:40"]
+    assert entry.results[0].current_time == ['16:24:39', '16:24:40']
 
     sample_temp = entry.results[0].sample_temperature
     assert np.array_equal(
         (sample_temp.magnitude if hasattr(sample_temp, 'magnitude') else sample_temp),
-        [32.95, 33.0]
+        [32.95, 33.0],
     )

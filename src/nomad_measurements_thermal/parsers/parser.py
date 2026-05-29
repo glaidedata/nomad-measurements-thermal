@@ -3,10 +3,10 @@ from nomad.parsing.parser import MatchingParser
 
 # Import the specialized schemas
 from nomad_measurements_thermal.schema_packages.schema_package import (
+    ARCMeasurement,
     DilatometryMeasurement,
     DSCMeasurement,
     TADSCMeasurement,
-    ARCMeasurement,
 )
 
 
@@ -33,41 +33,36 @@ class ThermalParser(MatchingParser):
             return False
 
         # 1. Dilatometry Check
-        has_dilatometry_sections = '[Header]' in text and '[Data]' in text
-        has_dilatometry_marker = any(
-            marker in text
-            for marker in (
-                'BEGIN:PARAMS',
-                'dilation_offset',
-                'cell_constant',
-                'Therm Resistance',
-                'Dilation (ppm)',
+        is_dilatometry = (
+            '[Header]' in text
+            and '[Data]' in text
+            and any(
+                marker in text
+                for marker in (
+                    'BEGIN:PARAMS',
+                    'dilation_offset',
+                    'cell_constant',
+                    'Therm Resistance',
+                    'Dilation (ppm)',
+                )
             )
         )
-        if has_dilatometry_sections and has_dilatometry_marker:
-            return True
 
         # 2. PerkinElmer DSC Check
-        has_dsc_markers = (
+        is_pe_dsc = (
             'Sample Weight:' in text and 'Method Steps:' in text and 'Heat Flow' in text
         )
-        if has_dsc_markers:
-            return True
 
         # 3. TA Instruments DSC Check
-        has_ta_dsc_markers = 'CLOSED' in text and 'Instrument' in text
-        if has_ta_dsc_markers:
-            return True
+        is_ta_dsc = 'CLOSED' in text and 'Instrument' in text
 
         # 4. ARC Semicolon Format Check
-        has_arc_markers = (
-            'Test Cell Type;' in text and
-            'Serial Number;Current Time;Sample Temperature' in text
-            )
-        if has_arc_markers:
-            return True
+        is_arc = (
+            'Test Cell Type;' in text
+            and 'Serial Number;Current Time;Sample Temperature' in text
+        )
 
-        return False
+        return is_dilatometry or is_pe_dsc or is_ta_dsc or is_arc
 
     def parse(
         self,
