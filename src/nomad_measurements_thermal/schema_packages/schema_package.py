@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
+from ientrance_instruments.schema_packages.schema_package import IEntranceInstrument
 from nomad.config import config
 from nomad.datamodel.data import ArchiveSection, EntryData
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
@@ -38,6 +39,9 @@ OE_TO_AM = 1000.0 / (4.0 * np.pi)  # Oersted to A/m
 # ==========================================
 class ThermalMeasurementBase(Measurement, EntryData):
     """Base class containing fields universal to ALL thermal analysis techniques."""
+
+    # Hidden field to preload the custom schema and prevent GUI crashes
+    _instrument_schema_preload = Quantity(type=IEntranceInstrument)
 
     data_file = Quantity(
         type=str,
@@ -483,8 +487,10 @@ class DilatometryMeasurement(ThermalMeasurementBase):
         if not self.data_file:
             return
         try:
-            with archive.m_context.raw_file(self.data_file, 'r') as f:
-                file_path = f.name
+            # Get the absolute OS path directly
+            file_path = archive.m_context.upload_files.raw_file_object(
+                self.data_file
+            ).os_path
             thermal_data = read_thermal_dat(file_path)
         except Exception as e:
             logger.error('Failed to parse thermal data file.', exc_info=e)
@@ -1088,8 +1094,10 @@ class DSCMeasurement(Measurement, EntryData):
         logger.info('Parsing DSC Measurement file', data_file=self.data_file)
 
         try:
-            with archive.m_context.raw_file(self.data_file, 'r') as f:
-                file_path = f.name
+            # Get the absolute OS path directly
+            file_path = archive.m_context.upload_files.raw_file_object(
+                self.data_file
+            ).os_path
             dsc_data = read_perkinelmer_dsc(file_path)
         except Exception as e:
             logger.error('Failed to parse DSC data file.', exc_info=e)
@@ -1192,8 +1200,10 @@ class TADSCMeasurement(Measurement, EntryData):
         )
 
         try:
-            with archive.m_context.raw_file(self.data_file, 'r') as f:
-                file_path = f.name
+            # Get the absolute OS path directly
+            file_path = archive.m_context.upload_files.raw_file_object(
+                self.data_file
+            ).os_path
             dsc_data = read_ta_dsc(file_path)
         except Exception as e:
             logger.error('Failed to parse TA DSC data file.', exc_info=e)
@@ -1429,8 +1439,10 @@ class ARCMeasurement(ThermalMeasurementBase):
             return
 
         try:
-            with archive.m_context.raw_file(self.data_file, 'r') as f:
-                file_path = f.name
+            # Get the absolute OS path directly
+            file_path = archive.m_context.upload_files.raw_file_object(
+                self.data_file
+            ).os_path
             arc_data = read_arc(file_path)
         except Exception as e:
             logger.error('Failed to parse ARC data file.', exc_info=e)
@@ -1440,6 +1452,18 @@ class ARCMeasurement(ThermalMeasurementBase):
         self._map_instrument_settings(arc_data)
         self._map_initial_conditions(arc_data)
         self._map_results(arc_data)
+
+
+class RawFileThermalData(EntryData):
+    """Placeholder for the raw thermal file to point to the generated ELN."""
+
+    m_def = Section(label='Raw Thermal Data File')
+
+    measurement = Quantity(
+        type=ThermalMeasurementBase,
+        a_eln=dict(component=ELNComponentEnum.ReferenceEditQuantity),
+        description='The editable ELN archive generated from this raw file.',
+    )
 
 
 m_package.__init_metainfo__()
