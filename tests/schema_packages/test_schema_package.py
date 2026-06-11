@@ -116,9 +116,10 @@ def test_thermal_normalize(mock_read_thermal_dat, mock_thermal_data):
     archive.m_context = MagicMock()
     archive.metadata = EntryMetadata(entry_name='dummy')
 
-    mock_file = MagicMock()
-    mock_file.name = 'dummy_path.dat'
-    archive.m_context.raw_file.return_value.__enter__.return_value = mock_file
+    # Mock the direct os_path extraction
+    mock_raw_file_object = MagicMock()
+    mock_raw_file_object.os_path = '/fake/path/dummy.dat'
+    archive.m_context.upload_files.raw_file_object.return_value = mock_raw_file_object
 
     entry = DilatometryMeasurement(data_file='dummy.dat')
     entry.normalize(archive, MagicMock())
@@ -137,9 +138,10 @@ def test_dsc_normalize(mock_read_perkinelmer_dsc, mock_dsc_data):
     archive.m_context = MagicMock()
     archive.metadata = EntryMetadata(entry_name='dummy')
 
-    mock_file = MagicMock()
-    mock_file.name = 'dummy_path.txt'
-    archive.m_context.raw_file.return_value.__enter__.return_value = mock_file
+    # Mock the direct os_path extraction
+    mock_raw_file_object = MagicMock()
+    mock_raw_file_object.os_path = '/fake/path/dummy.txt'
+    archive.m_context.upload_files.raw_file_object.return_value = mock_raw_file_object
 
     entry = DSCMeasurement(data_file='dummy.txt')
     entry.normalize(archive, MagicMock())
@@ -158,9 +160,10 @@ def test_ta_dsc_normalize(mock_read_ta_dsc, mock_ta_dsc_data):
     archive.m_context = MagicMock()
     archive.metadata = EntryMetadata(entry_name='dummy')
 
-    mock_file = MagicMock()
-    mock_file.name = 'dummy_path_ta.txt'
-    archive.m_context.raw_file.return_value.__enter__.return_value = mock_file
+    # Mock the direct os_path extraction
+    mock_raw_file_object = MagicMock()
+    mock_raw_file_object.os_path = '/fake/path/dummy_ta.txt'
+    archive.m_context.upload_files.raw_file_object.return_value = mock_raw_file_object
 
     entry = TADSCMeasurement(data_file='dummy_ta.txt')
     entry.normalize(archive, MagicMock())
@@ -190,9 +193,10 @@ def test_arc_normalize(mock_read_arc, mock_arc_data):
     archive.m_context = MagicMock()
     archive.metadata = EntryMetadata(entry_name='dummy')
 
-    mock_file = MagicMock()
-    mock_file.name = 'dummy_path_arc.txt'
-    archive.m_context.raw_file.return_value.__enter__.return_value = mock_file
+    # Mock the direct os_path extraction
+    mock_raw_file_object = MagicMock()
+    mock_raw_file_object.os_path = '/fake/path/dummy_arc.txt'
+    archive.m_context.upload_files.raw_file_object.return_value = mock_raw_file_object
 
     entry = ARCMeasurement(data_file='dummy_arc.txt')
     entry.normalize(archive, MagicMock())

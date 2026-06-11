@@ -1,8 +1,15 @@
 from unittest.mock import MagicMock, patch
 
-from nomad.datamodel import EntryArchive
+from nomad.datamodel.datamodel import EntryArchive, EntryMetadata
 
 from nomad_measurements_thermal.parsers.parser import ThermalParser
+from nomad_measurements_thermal.schema_packages.schema_package import (
+    ARCMeasurement,
+    DilatometryMeasurement,
+    DSCMeasurement,
+    RawFileThermalData,
+    TADSCMeasurement,
+)
 
 
 def test_is_mainfile():
@@ -38,14 +45,14 @@ def test_is_mainfile():
     )
 
 
-@patch(
-    'nomad_measurements_thermal.schema_packages.'
-    'schema_package.DilatometryMeasurement.normalize'
-)
-def test_parse_thermal(mock_normalize):
-    """Verify routing to the Dilatometry schema."""
+@patch('nomad_measurements_thermal.parsers.parser.create_archive')
+def test_parse_thermal(mock_create_archive):
+    """Verify routing to the Dilatometry schema via Two-Archive."""
+    mock_create_archive.return_value = 'mocked_archive_reference'
     parser = ThermalParser()
+
     archive = EntryArchive()
+    archive.metadata = EntryMetadata()
     archive.m_context = MagicMock()
 
     mock_file = MagicMock()
@@ -54,18 +61,26 @@ def test_parse_thermal(mock_normalize):
 
     parser.parse('path/to/my_test_file.dat', archive, None)
 
-    assert archive.data is not None
-    assert archive.data.__class__.__name__ == 'DilatometryMeasurement'
-    mock_normalize.assert_called_once()
+    # Check that the placeholder was attached
+    assert isinstance(archive.data, RawFileThermalData)
+    assert archive.data.measurement.m_proxy_value == 'mocked_archive_reference'
+
+    # Check that the correct ELN was created
+    mock_create_archive.assert_called_once()
+    entry, _, archive_name = mock_create_archive.call_args[0]
+    assert isinstance(entry, DilatometryMeasurement)
+    assert entry.data_file == 'my_test_file.dat'
+    assert archive_name == 'my_test_file.archive.json'
 
 
-@patch(
-    'nomad_measurements_thermal.schema_packages.schema_package.DSCMeasurement.normalize'
-)
-def test_parse_pe_dsc(mock_normalize):
-    """Verify routing to the PerkinElmer DSC schema."""
+@patch('nomad_measurements_thermal.parsers.parser.create_archive')
+def test_parse_pe_dsc(mock_create_archive):
+    """Verify routing to the PerkinElmer DSC schema via Two-Archive."""
+    mock_create_archive.return_value = 'mocked_archive_reference'
     parser = ThermalParser()
+
     archive = EntryArchive()
+    archive.metadata = EntryMetadata()
     archive.m_context = MagicMock()
 
     mock_file = MagicMock()
@@ -74,19 +89,24 @@ def test_parse_pe_dsc(mock_normalize):
 
     parser.parse('path/to/my_test_file.txt', archive, None)
 
-    assert archive.data is not None
-    assert archive.data.__class__.__name__ == 'DSCMeasurement'
-    mock_normalize.assert_called_once()
+    assert isinstance(archive.data, RawFileThermalData)
+    assert archive.data.measurement.m_proxy_value == 'mocked_archive_reference'
+
+    mock_create_archive.assert_called_once()
+    entry, _, archive_name = mock_create_archive.call_args[0]
+    assert isinstance(entry, DSCMeasurement)
+    assert entry.data_file == 'my_test_file.txt'
+    assert archive_name == 'my_test_file.archive.json'
 
 
-@patch(
-    'nomad_measurements_thermal.schema_packages.'
-    'schema_package.TADSCMeasurement.normalize'
-)
-def test_parse_ta_dsc(mock_normalize):
-    """Verify routing to the TA Instruments DSC schema."""
+@patch('nomad_measurements_thermal.parsers.parser.create_archive')
+def test_parse_ta_dsc(mock_create_archive):
+    """Verify routing to the TA Instruments DSC schema via Two-Archive."""
+    mock_create_archive.return_value = 'mocked_archive_reference'
     parser = ThermalParser()
+
     archive = EntryArchive()
+    archive.metadata = EntryMetadata()
     archive.m_context = MagicMock()
 
     mock_file = MagicMock()
@@ -95,18 +115,24 @@ def test_parse_ta_dsc(mock_normalize):
 
     parser.parse('path/to/ta_test_file.txt', archive, None)
 
-    assert archive.data is not None
-    assert archive.data.__class__.__name__ == 'TADSCMeasurement'
-    mock_normalize.assert_called_once()
+    assert isinstance(archive.data, RawFileThermalData)
+    assert archive.data.measurement.m_proxy_value == 'mocked_archive_reference'
+
+    mock_create_archive.assert_called_once()
+    entry, _, archive_name = mock_create_archive.call_args[0]
+    assert isinstance(entry, TADSCMeasurement)
+    assert entry.data_file == 'ta_test_file.txt'
+    assert archive_name == 'ta_test_file.archive.json'
 
 
-@patch(
-    'nomad_measurements_thermal.schema_packages.schema_package.ARCMeasurement.normalize'
-)
-def test_parse_arc(mock_normalize):
-    """Verify routing to the ARC schema."""
+@patch('nomad_measurements_thermal.parsers.parser.create_archive')
+def test_parse_arc(mock_create_archive):
+    """Verify routing to the ARC schema via Two-Archive."""
+    mock_create_archive.return_value = 'mocked_archive_reference'
     parser = ThermalParser()
+
     archive = EntryArchive()
+    archive.metadata = EntryMetadata()
     archive.m_context = MagicMock()
 
     mock_file = MagicMock()
@@ -115,6 +141,11 @@ def test_parse_arc(mock_normalize):
 
     parser.parse('path/to/arc_test_file.txt', archive, None)
 
-    assert archive.data is not None
-    assert archive.data.__class__.__name__ == 'ARCMeasurement'
-    mock_normalize.assert_called_once()
+    assert isinstance(archive.data, RawFileThermalData)
+    assert archive.data.measurement.m_proxy_value == 'mocked_archive_reference'
+
+    mock_create_archive.assert_called_once()
+    entry, _, archive_name = mock_create_archive.call_args[0]
+    assert isinstance(entry, ARCMeasurement)
+    assert entry.data_file == 'arc_test_file.txt'
+    assert archive_name == 'arc_test_file.archive.json'
