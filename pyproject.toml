@@ -14,7 +14,7 @@ classifiers = [
 ]
 name = "nomad-measurements-thermal"
 description = "NOMAD plugin for Thermal Analysis"
-version = "0.3.1"
+version = "0.3.2"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
@@ -32,7 +32,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/abbasgholami71/nomad-measurements-thermal"
+Repository = "https://github.com/glaidedata/nomad-measurements-thermal"
 
 [project.optional-dependencies]
 dev = [
