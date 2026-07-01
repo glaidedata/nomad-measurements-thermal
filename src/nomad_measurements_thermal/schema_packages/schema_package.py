@@ -7,7 +7,6 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
-from ientrance_instruments.schema_packages.schema_package import IEntranceInstrument
 from nomad.config import config
 from nomad.datamodel.data import ArchiveSection, EntryData
 from nomad.datamodel.metainfo.annotations import ELNAnnotation, ELNComponentEnum
@@ -39,9 +38,6 @@ OE_TO_AM = 1000.0 / (4.0 * np.pi)  # Oersted to A/m
 # ==========================================
 class ThermalMeasurementBase(Measurement, EntryData):
     """Base class containing fields universal to ALL thermal analysis techniques."""
-
-    # Hidden field to preload the custom schema and prevent GUI crashes
-    _instrument_schema_preload = Quantity(type=IEntranceInstrument)
 
     data_file = Quantity(
         type=str,
